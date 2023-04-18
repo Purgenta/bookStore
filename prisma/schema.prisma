@@ -1,20 +1,132 @@
 generator client {
   provider = "prisma-client-js"
 }
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
 model User {
-  id      Int      @id @default(autoincrement())
-  email   String   @unique
-  name    String 
-  lastName String
-  createdAt DateTime @default(now())
-  password String 
-  role Role @default(USER)
+  id           Int            @id @default(autoincrement())
+  email        String         @unique
+  name         String
+  lastName     String
+  phoneNumber  String
+  createdAt    DateTime       @default(now())
+  password     String
+  role         Role           @default(USER)
+  refreshToken RefreshToken[]
+  cart         Cart[]
+  reviews      Review[]
 }
+
+model Product {
+  id             Int             @id @default(autoincrement())
+  pageNumber     Int
+  title          String
+  publishingDate DateTime
+  is_selling     Boolean         @default(true)
+  price          Float
+  type_id        Int
+  quantity       Int
+  publisher_id   Int
+  cartItem       CartItem[]
+  genre          ProductGenre[]
+  reviews        Review[]
+  productImages  ProductImages[]
+  publisher      Publisher       @relation(fields: [publisher_id], references: [id])
+  product_Type   ProductType     @relation(fields: [type_id], references: [id])
+}
+
+model Genre {
+  id       Int            @id @default(autoincrement())
+  name     String         @unique
+  products ProductGenre[]
+}
+
+model ProductGenre {
+  product_id Int
+  genre_id   Int
+  product    Product @relation(fields: [product_id], references: [id])
+  genre      Genre   @relation(fields: [genre_id], references: [id])
+
+  @@id([product_id, genre_id])
+}
+
+model Review {
+  id         Int     @id @default(autoincrement())
+  comment    String
+  rating     Float
+  user_id    Int
+  product_id Int
+  user       User    @relation(fields: [user_id], references: [id])
+  product    Product @relation(fields: [product_id], references: [id])
+}
+
+model Publisher {
+  id      Int       @id @default(autoincrement())
+  name    String    @unique
+  product Product[]
+}
+
+model Order {
+  id           Int         @id @default(autoincrement())
+  order_status OrderStatus @default(ONGOING)
+  ordered_at   DateTime    @default(now())
+  cart_id      Int
+  cart         Cart        @relation(fields: [cart_id], references: [id])
+}
+
+model ProductType {
+  id      Int       @id @default(autoincrement())
+  type    String    @unique
+  product Product[]
+}
+
+model Cart {
+  id         Int        @id @default(autoincrement())
+  user_id    Int
+  user       User       @relation(fields: [user_id], references: [id])
+  cartItems  CartItem[]
+  order      Order[]
+  cartStatus CartStatus @default(ONGOING)
+}
+
+model CartItem {
+  id         Int     @id @default(autoincrement())
+  product_id Int
+  cart_id    Int
+  quantity   Int
+  product    Product @relation(fields: [product_id], references: [id])
+  cart       Cart    @relation(fields: [cart_id], references: [id])
+}
+
+model RefreshToken {
+  id           Int    @id @default(autoincrement())
+  refreshToken String
+  user         User   @relation(fields: [user_id], references: [id])
+  user_id      Int
+}
+
+model ProductImages {
+  id         Int     @id @default(autoincrement())
+  product_id Int
+  product    Product @relation(fields: [product_id], references: [id])
+}
+
 enum Role {
   USER
   ADMIN
+}
+
+enum CartStatus {
+  ONGOING
+  ISSUED_ORDER
+}
+
+enum OrderStatus {
+  DELIVERED
+  ONGOING
+  CANCELED
 }
