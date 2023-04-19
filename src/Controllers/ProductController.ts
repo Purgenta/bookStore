@@ -11,6 +11,7 @@ class ProductController extends Controller {
   setRouter(): Router {
     const router = express.Router();
     router.get("/getFilteredProducts", this.getFilteredProducts());
+    router.get("/:id", this.getProductById());
     return router;
   }
   private getFilteredProducts() {

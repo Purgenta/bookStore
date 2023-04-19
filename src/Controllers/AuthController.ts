@@ -5,7 +5,6 @@ import { refreshTokenMiddleware } from "../Middlewares/AuthenticationMiddleware.
 import { UserValidation } from "../Validation/UserValidation.js";
 import { validationResult } from "express-validator";
 import { Request, Response, NextFunction, Router } from "express";
-import authenticatedMiddleWare from "../Middlewares/AuthenticationMiddleware.js";
 class AuthController extends Controller {
   private authService: AuthService;
   constructor() {
@@ -19,6 +18,7 @@ class AuthController extends Controller {
       .setPassword()
       .setName()
       .setLastName()
+      .setNumber()
       .getValidation();
     const validateUserLogin = new UserValidation()
       .setEmail()
@@ -39,13 +39,13 @@ class AuthController extends Controller {
       if (!errors.isEmpty) {
         res.status(400).json({ errors: errors.array() });
       }
-      const { email, name, lastName, password, phoneNumber } = req.body;
+      const { email, name, last_name, password, phone_number } = req.body;
       this.authService.register(req, res, next, {
         email,
         name,
-        lastName,
+        last_name,
         password,
-        phoneNumber,
+        phone_number,
       });
     };
   }

@@ -1,7 +1,9 @@
 import database from "../Database/database.js";
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
+import { plainToClass } from "class-transformer";
+import { ProductDTO } from "../Models/ProductDTO.js";
 class ProductService {
-  getQueriedProducts(req: Request, res: Response) {
+  async getQueriedProducts(req: Request, res: Response) {
     let {
       limit,
       page,
@@ -11,20 +13,23 @@ class ProductService {
       publishedDateHigherBound,
     } = req.query;
     let itemLimit = 15;
-    if (limit) itemLimit = +limit;
+    if (limit) itemLimit = parseInt(limit as string);
     let skip = 0;
-    if (page) skip = itemLimit * +page;
+    if (page) skip = itemLimit * parseInt(page as string);
     try {
-      type Filter = Parameters<typeof database.product.findMany>; // [string, number]
+      type Filter = Parameters<typeof database.product.findMany>;
       const filter: Filter[0] = {
         skip,
         take: itemLimit,
+        include: {
+          publisher: true,
+        },
         where: {
           price: {
-            gte: priceLowerBound as number | undefined,
-            lte: priceUpperBound as number | undefined,
+            gte: priceLowerBound ? +priceLowerBound : undefined,
+            lte: priceUpperBound ? +priceUpperBound : undefined,
           },
-          publishingDate: {
+          publishing_date: {
             gte: publishedDateLowerBound as string | undefined,
             lte: publishedDateHigherBound as string | undefined,
           },
@@ -33,29 +38,33 @@ class ProductService {
           price: "desc",
         },
       };
-      const products = database.product.findMany({});
-      const numberOfItems = database.product.count;
+      const products = await database.product.findMany(filter);
+      const hasNextPage = await database.product.count();
       res
         .json({
-          products,
-          hasNextPage: true,
+          products: plainToClass(ProductDTO, products, {
+            excludeExtraneousValues: true,
+          }),
+          hasNextPage,
         })
         .send();
     } catch (error) {
       res.status(500).send();
     }
   }
-  getProductById(req: Request, res: Response) {
+  async getProductById(req: Request, res: Response) {
     const { id } = req.params;
     try {
-      const product = database.product.findFirstOrThrow({
+      const product = await database.product.findFirstOrThrow({
         where: {
           id: {
-            equals: id as unknown as number,
+            equals: parseInt(id),
           },
         },
       });
-      res.send(product);
+      res.send(
+        plainToClass(ProductDTO, product, { excludeExtraneousValues: true })
+      );
     } catch (error) {
       res.status(404).send();
     }

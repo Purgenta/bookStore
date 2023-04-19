@@ -10,9 +10,9 @@ datasource db {
 model User {
   id           Int            @id @default(autoincrement())
   email        String         @unique
-  name         String
-  lastName     String
-  phoneNumber  String
+  name         String         @db.VarChar(100)
+  last_name     String        @db.VarChar(100)
+  phone_number  String
   createdAt    DateTime       @default(now())
   password     String
   role         Role           @default(USER)
@@ -23,9 +23,9 @@ model User {
 
 model Product {
   id             Int             @id @default(autoincrement())
-  pageNumber     Int
+  page_number     Int
   title          String
-  publishingDate DateTime
+  publishing_date DateTime
   is_selling     Boolean         @default(true)
   price          Float
   type_id        Int
@@ -36,7 +36,7 @@ model Product {
   reviews        Review[]
   productImages  ProductImages[]
   publisher      Publisher       @relation(fields: [publisher_id], references: [id])
-  product_Type   ProductType     @relation(fields: [type_id], references: [id])
+  productType   ProductType     @relation(fields: [type_id], references: [id])
 }
 
 model Genre {
@@ -56,7 +56,7 @@ model ProductGenre {
 
 model Review {
   id         Int     @id @default(autoincrement())
-  comment    String
+  comment    String  @db.MediumText()
   rating     Float
   user_id    Int
   product_id Int
@@ -90,7 +90,7 @@ model Cart {
   user       User       @relation(fields: [user_id], references: [id])
   cartItems  CartItem[]
   order      Order[]
-  cartStatus CartStatus @default(ONGOING)
+  status CartStatus @default(ONGOING)
 }
 
 model CartItem {
@@ -104,7 +104,7 @@ model CartItem {
 
 model RefreshToken {
   id           Int    @id @default(autoincrement())
-  refreshToken String
+  refresh_token String
   user         User   @relation(fields: [user_id], references: [id])
   user_id      Int
 }

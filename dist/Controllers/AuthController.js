@@ -2,50 +2,55 @@ import Controller from "../Core/Controller.js";
 import express from "express";
 import AuthService from "../Services/AuthService.js";
 import { refreshTokenMiddleware } from "../Middlewares/AuthenticationMiddleware.js";
-import { validateUserDetails, validateUserLogin, } from "../Validation/UserValidation.js";
+import { UserValidation } from "../Validation/UserValidation.js";
 import { validationResult } from "express-validator";
-import authenticatedMiddleWare from "../Middlewares/AuthenticationMiddleware.js";
-class UserController extends Controller {
+class AuthController extends Controller {
+    constructor() {
+        super();
+        this.authService = new AuthService();
+    }
     setRouter() {
         const router = express.Router();
+        const validateUserDetails = new UserValidation()
+            .setEmail()
+            .setPassword()
+            .setName()
+            .setLastName()
+            .getValidation();
+        const validateUserLogin = new UserValidation()
+            .setEmail()
+            .setPassword()
+            .getValidation();
         router.route("/register").post(validateUserDetails, this.register());
-        router
-            .route("/protectedRoute")
-            .get(authenticatedMiddleWare, this.someProtectedData);
-        router
-            .route("/refreshToken")
-            .get(refreshTokenMiddleware, this.refreshToken);
+        router.route("/refreshToken").get(refreshTokenMiddleware, this.accessToken);
         router.route("/login").post(validateUserLogin, this.login());
         return router;
     }
     register() {
-        return (req, res) => {
+        return (req, res, next) => {
             const errors = validationResult(req);
             if (!errors.isEmpty) {
                 res.status(400).json({ errors: errors.array() });
             }
-            const authService = new AuthService(req, res);
-            const { email, name, lastName, password } = req.body;
-            authService.register({ email, name, lastName, password });
+            const { email, name, lastName, password, phoneNumber } = req.body;
+            this.authService.register(req, res, next, {
+                email,
+                name,
+                lastName,
+                password,
+                phoneNumber,
+            });
         };
     }
     login() {
-        return (req, res) => {
-            const authService = new AuthService(req, res);
+        return (req, res, next) => {
             const { email, password } = req.body;
-            authService.login({ email, password });
+            this.authService.login(req, res, next, { email, password });
         };
     }
-    someProtectedData(req, res) {
-        res.status(200).json({
-            greet: "Hello from a secure endpoint",
-            user: req.user,
-        });
-    }
-    refreshToken(req, res) {
-        const authService = new AuthService(req, res);
-        authService.issueRefreshToken(req, res);
+    accessToken(req, res) {
+        this.authService.issueAccessToken(req, res);
     }
 }
-export default UserController;
+export default AuthController;
 //# sourceMappingURL=AuthController.js.map

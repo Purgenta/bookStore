@@ -45,7 +45,7 @@ export const refreshTokenMiddleware = (
       const foundRefreshToken = await database.refreshToken.findFirst({
         where: {
           user_id: refreshToken.user_id,
-          refreshToken: cookies[`refresh_token`],
+          refresh_token: cookies[`refresh_token`],
         },
         include: { user: true },
       });
@@ -53,7 +53,8 @@ export const refreshTokenMiddleware = (
         return res.status(401).send();
       }
       if (
-        foundRefreshToken?.refreshToken !== (cookies[`refresh_token`] as string)
+        foundRefreshToken?.refresh_token !==
+        (cookies[`refresh_token`] as string)
       ) {
         return res.status(401).send();
       }

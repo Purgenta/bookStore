@@ -9,11 +9,14 @@ dotenv.config();
 export type UserDetails = {
   email: string;
   name: string;
-  lastName: string;
+  last_name: string;
   password: string;
-  phoneNumber: string;
+  phone_number: string;
 };
-export type UserLogin = Omit<UserDetails, "name" | "lastName" | "phoneNumber">;
+export type UserLogin = Omit<
+  UserDetails,
+  "name" | "last_name" | "phone_number"
+>;
 export type JwtPayload = {
   user_id: number;
   role: Role;
@@ -90,7 +93,7 @@ class AuthService {
         expiresIn: "10s",
       }
     );
-    const refreshToken = jwt.sign(
+    const refresh_token = jwt.sign(
       { user_id: user.id, role: user.role },
       `${process.env.REFRESH_TOKEN_SECRET_KEY}`,
       {
@@ -99,11 +102,11 @@ class AuthService {
     );
     await database.refreshToken.create({
       data: {
-        refreshToken,
+        refresh_token,
         user_id: user.id,
       },
     });
-    res.cookie("refresh_token", refreshToken, {
+    res.cookie("refresh_token", refresh_token, {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
       sameSite: "none",
