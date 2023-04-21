@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 import { Role } from "@prisma/client";
 import UserService from "./UserService.js";
 dotenv.config();
-export type UserDetails = {
+type UserDetails = {
   email: string;
   name: string;
   last_name: string;
@@ -22,13 +22,15 @@ export type JwtPayload = {
   role: Role;
 };
 class AuthService {
-  public async register(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-    userDetails: UserDetails
-  ) {
-    const userExists = await UserService.checkIfUserExists(userDetails.email);
+  private userService: UserService;
+  constructor() {
+    this.userService = new UserService();
+  }
+  public async register(req: Request, res: Response, next: NextFunction) {
+    const userDetails = req.body as UserDetails;
+    const userExists = await this.userService.checkIfUserExists(
+      userDetails.email
+    );
     if (userExists) {
       res.status(400).json({
         errors: {
@@ -48,21 +50,8 @@ class AuthService {
     });
     res.status(201).send();
   }
-  private async checkIfUserExists(email: string): Promise<boolean> {
-    const user = await database.user.findFirst({
-      where: {
-        email: email,
-      },
-    });
-    if (user) return true;
-    return false;
-  }
-  public async login(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-    userLogin: UserLogin
-  ) {
+  public async login(req: Request, res: Response, next: NextFunction) {
+    const userLogin: UserLogin = req.body;
     const user = await database.user.findFirst({
       where: {
         email: userLogin.email,
@@ -120,7 +109,7 @@ class AuthService {
       { user_id },
       `${process.env.ACCESS_TOKEN_SECRET_KEY}`,
       {
-        expiresIn: "1min",
+        expiresIn: "15min",
       }
     );
     res.status(200).send({ accessToken, role: req.role });

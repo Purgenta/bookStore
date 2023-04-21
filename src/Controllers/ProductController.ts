@@ -10,15 +10,19 @@ class ProductController extends Controller {
   }
   setRouter(): Router {
     const router = express.Router();
-    router.get("/getFilteredProducts", this.getFilteredProducts());
+    router.get("/filteredProducts", this.getFilteredProducts());
+    router.get("/showcasedProducts", this.getShowcasedProducts());
     router.get("/:id", this.getProductById());
     return router;
   }
   private getFilteredProducts() {
-    return this.productService.getQueriedProducts;
+    return this.productService.getFilteredProducts.bind(this.productService);
   }
   private getProductById() {
-    return this.productService.getProductById;
+    return this.productService.getProductById.bind(this.productService);
+  }
+  private getShowcasedProducts() {
+    return this.productService.getShowcasedProducts.bind(this.productService);
   }
 }
 export default ProductController;

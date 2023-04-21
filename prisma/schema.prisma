@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
 }
 
 datasource db {
@@ -13,11 +13,12 @@ model User {
   name         String         @db.VarChar(100)
   last_name     String        @db.VarChar(100)
   phone_number  String
-  createdAt    DateTime       @default(now())
+  created_at    DateTime       @default(now())
   password     String
   role         Role           @default(USER)
   refreshToken RefreshToken[]
   cart         Cart[]
+  favourites Favourites[]
   reviews      Review[]
 }
 
@@ -34,6 +35,7 @@ model Product {
   cartItem       CartItem[]
   genre          ProductGenre[]
   reviews        Review[]
+  favourites Favourites[]
   productImages  ProductImages[]
   publisher      Publisher       @relation(fields: [publisher_id], references: [id])
   productType   ProductType     @relation(fields: [type_id], references: [id])
@@ -92,7 +94,13 @@ model Cart {
   order      Order[]
   status CartStatus @default(ONGOING)
 }
-
+model Favourites {
+  id Int @id @default(autoincrement())
+  user_id Int 
+  product_id Int
+  user User @relation(fields: [user_id],references: [id])
+  product Product @relation(fields: [product_id],references: [id])
+}
 model CartItem {
   id         Int     @id @default(autoincrement())
   product_id Int
@@ -112,6 +120,7 @@ model RefreshToken {
 model ProductImages {
   id         Int     @id @default(autoincrement())
   product_id Int
+  image_url String 
   product    Product @relation(fields: [product_id], references: [id])
 }
 

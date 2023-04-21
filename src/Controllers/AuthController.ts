@@ -3,8 +3,7 @@ import express from "express";
 import AuthService from "../Services/AuthService.js";
 import { refreshTokenMiddleware } from "../Middlewares/AuthenticationMiddleware.js";
 import { UserValidation } from "../Validation/UserValidation.js";
-import { validationResult } from "express-validator";
-import { Request, Response, NextFunction, Router } from "express";
+import { Router } from "express";
 class AuthController extends Controller {
   private authService: AuthService;
   constructor() {
@@ -13,6 +12,12 @@ class AuthController extends Controller {
   }
   setRouter(): Router {
     const router = express.Router();
+    router.route("/register").post(...this.register());
+    router.route("/refreshToken").get(...this.accessToken());
+    router.route("/login").post(...this.login());
+    return router;
+  }
+  private register() {
     const validateUserDetails = new UserValidation()
       .setEmail()
       .setPassword()
@@ -20,43 +25,28 @@ class AuthController extends Controller {
       .setLastName()
       .setNumber()
       .getValidation();
+    return [
+      validateUserDetails,
+      this.mapErrors,
+      this.authService.register.bind(this.authService),
+    ];
+  }
+  private login() {
     const validateUserLogin = new UserValidation()
       .setEmail()
       .setPassword()
       .getValidation();
-    router.route("/register").post(validateUserDetails, this.register());
-    router.route("/refreshToken").get(refreshTokenMiddleware, this.accessToken);
-    router.route("/login").post(validateUserLogin, this.login());
-    return router;
+    return [
+      validateUserLogin,
+      this.mapErrors,
+      this.authService.login.bind(this.authService),
+    ];
   }
-  private register(): (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => void {
-    return (req: Request, res: Response, next) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty) {
-        res.status(400).json({ errors: errors.array() });
-      }
-      const { email, name, last_name, password, phone_number } = req.body;
-      this.authService.register(req, res, next, {
-        email,
-        name,
-        last_name,
-        password,
-        phone_number,
-      });
-    };
-  }
-  private login() {
-    return (req: Request, res: Response, next: NextFunction) => {
-      const { email, password } = req.body;
-      this.authService.login(req, res, next, { email, password });
-    };
-  }
-  private accessToken(req: Request, res: Response) {
-    this.authService.issueAccessToken(req, res);
+  private accessToken() {
+    return [
+      refreshTokenMiddleware,
+      this.authService.issueAccessToken.bind(this.authService),
+    ];
   }
 }
 export default AuthController;

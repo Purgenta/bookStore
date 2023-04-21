@@ -1,7 +1,9 @@
+import { NextFunction } from "express";
 import database from "../Database/database.js";
 type ProductReview = {
   comment: string;
   rating: number;
+  productId: number;
 };
 class ReviewService {
   async checkUserReviewEligibility(user: number, product_id: number) {
@@ -36,4 +38,6 @@ class ReviewService {
     if (hasBoughtProduct) return true;
     return false;
   }
+  async addReview(req: Request, res: Response, next: NextFunction) {}
 }
+export default ReviewService;

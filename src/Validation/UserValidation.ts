@@ -16,11 +16,13 @@ class UserValidation extends Validation {
     return this;
   }
   setLastName() {
-    this.chain.push(body("lastName").isAlpha().trim().isLength({ min: 3 }));
+    this.chain.push(body("last_name").isAlpha().trim().isLength({ min: 3 }));
     return this;
   }
   setNumber() {
-    this.chain.push(body("phoneNumber").isNumeric().isLength({ min: 9 }));
+    this.chain.push(
+      body("phone_number").isNumeric().isLength({ min: 8, max: 20 })
+    );
     return this;
   }
 }

@@ -9,15 +9,17 @@ export class ProductDTO {
   @Expose()
   price!: number;
   @Expose()
-  type_id!: number;
-  @Expose()
   quantity!: number;
-  @Exclude()
-  publisher_id!: number;
   @Expose()
   page_number!: number;
   @Expose()
   publishing_date!: string;
   @Expose()
-  publisher!: object;
+  productImages!: object;
+  @Expose()
+  productType!: object;
+  @Expose()
+  genre!: object;
+  @Expose()
+  avgRating!: number;
 }
