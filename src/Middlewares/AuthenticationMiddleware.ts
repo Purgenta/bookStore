@@ -10,6 +10,7 @@ const authenticatedMiddleWare = (
   next: NextFunction
 ) => {
   const authHeader = req?.headers?.authorization;
+  console.log(authHeader);
   if (!authHeader) return res.status(401).send();
   const accessToken = authHeader.slice(7);
   jwt.verify(

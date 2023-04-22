@@ -1,6 +1,7 @@
 import database from "../Database/database.js";
 import { Request, Response } from "express";
 import { Prisma } from "@prisma/client";
+import { Product } from "@prisma/client";
 import { plainToClass } from "class-transformer";
 import { ProductDTO } from "../Models/ProductDTO.js";
 class ProductService {
@@ -94,20 +95,36 @@ class ProductService {
     }
   }
   private async getBestRated() {
-    const bestRatedProducts =
-      await database.$queryRaw(Prisma.sql`SELECT product.*, AVG(review.rating) AS avgRating,productimages.* 
+    const bestRatedProducts = await database.$queryRaw<
+      Product[]
+    >(Prisma.sql`SELECT product.id
 FROM product 
 LEFT JOIN review ON review.product_id = product.id
 LEFT JOIN productimages ON productimages.product_id = product.id
 WHERE product.is_selling = TRUE AND product.quantity > 0
 GROUP BY product.id
-order BY avgRating DESC
+order BY AVG(review.rating) DESC
 LIMIT 10`);
-    return bestRatedProducts;
+    const bestRatedId: number[] = bestRatedProducts.map((product) => {
+      return product.id;
+    });
+    return await database.product.findMany({
+      include: {
+        productImages: true,
+      },
+      where: {
+        id: {
+          in: bestRatedId,
+        },
+      },
+    });
   }
   private async getNewestProducts() {
     const newestProducts = await database.product.findMany({
       take: 10,
+      include: {
+        productImages: true,
+      },
       where: {
         is_selling: true,
         quantity: {

@@ -1,4 +1,4 @@
-import { Exclude, Expose } from "class-transformer";
+import { Exclude, Expose, Type } from "class-transformer";
 export class ProductDTO {
   @Exclude()
   is_selling!: boolean;
@@ -20,6 +20,8 @@ export class ProductDTO {
   productType!: object;
   @Expose()
   genre!: object;
+  @Expose()
+  image_url!: string;
   @Expose()
   avgRating!: number;
 }
