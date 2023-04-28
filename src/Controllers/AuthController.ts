@@ -1,7 +1,9 @@
 import Controller from "../Core/Controller.js";
 import express from "express";
 import AuthService from "../Services/AuthService.js";
-import { refreshTokenMiddleware } from "../Middlewares/AuthenticationMiddleware.js";
+import authenticatedMiddleWare, {
+  refreshTokenMiddleware,
+} from "../Middlewares/AuthenticationMiddleware.js";
 import { UserValidation } from "../Validation/UserValidation.js";
 import { Router } from "express";
 class AuthController extends Controller {
@@ -12,6 +14,12 @@ class AuthController extends Controller {
   }
   setRouter(): Router {
     const router = express.Router();
+    router.get("/protectedRoute", authenticatedMiddleWare, (req, res) =>
+      res.send({
+        greet: "Hi",
+        user: req.user,
+      })
+    );
     router.route("/register").post(...this.register());
     router.route("/refreshToken").get(...this.accessToken());
     router.route("/login").post(...this.login());

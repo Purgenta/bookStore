@@ -24,4 +24,12 @@ export class ProductDTO {
   image_url!: string;
   @Expose()
   avgRating!: number;
+  @Expose()
+  sale!: object;
+  @Expose()
+  author!: object;
+  @Expose()
+  description!: string;
+  @Expose()
+  publisher!: object;
 }

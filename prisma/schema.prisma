@@ -32,6 +32,9 @@ model Product {
   type_id        Int
   quantity       Int
   publisher_id   Int
+  description String @db.MediumText()
+  author_id Int 
+  author Author @relation(fields: [author_id] ,references: [id])
   cartItem       CartItem[]
   genre          ProductGenre[]
   reviews        Review[]
@@ -39,8 +42,14 @@ model Product {
   productImages  ProductImages[]
   publisher      Publisher       @relation(fields: [publisher_id], references: [id])
   productType   ProductType     @relation(fields: [type_id], references: [id])
+  sale  Sale?
 }
-
+model Author {
+  id Int @id @default(autoincrement())
+  name String 
+  last_name String
+  product Product[] 
+}
 model Genre {
   id       Int            @id @default(autoincrement())
   name     String         @unique
@@ -122,6 +131,12 @@ model ProductImages {
   product_id Int
   image_url String 
   product    Product @relation(fields: [product_id], references: [id])
+}
+model Sale {
+  id Int @id @default(autoincrement())
+  product_id Int @unique
+  discount Int 
+  product Product?  @relation(fields: [product_id],references: [id])
 }
 
 enum Role {

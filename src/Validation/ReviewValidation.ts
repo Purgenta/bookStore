@@ -3,7 +3,9 @@ import Validation from "../Core/Validation.js";
 
 class ReviewValidation extends Validation {
   setComment() {
-    this.chain.push(body("comment").trim().isLength({ min: 15, max: 100 }));
+    this.chain.push(
+      body("comment").trim().isString().isLength({ min: 15, max: 300 })
+    );
     return this;
   }
   setRating() {

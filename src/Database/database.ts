@@ -4,9 +4,7 @@ declare global {
   var __database: PrismaClient | undefined;
 }
 if (!global.__database) {
-  const prisma = new PrismaClient({
-    log: ["query", "info", "warn", "error"],
-  });
+  const prisma = new PrismaClient();
   global.__database = prisma;
 }
 database = global.__database;

@@ -1,5 +1,6 @@
 import Controller from "../Core/Controller.js";
 import ProductService from "../Services/ProductService.js";
+import { authenticatedOrAnonymous } from "../Middlewares/AuthenticationMiddleware.js";
 import { Router } from "express";
 import express from "express";
 class ProductController extends Controller {
@@ -12,7 +13,7 @@ class ProductController extends Controller {
     const router = express.Router();
     router.get("/filteredProducts", this.getFilteredProducts());
     router.get("/showcasedProducts", this.getShowcasedProducts());
-    router.get("/:id", this.getProductById());
+    router.get("/:id", authenticatedOrAnonymous, this.getProductById());
     return router;
   }
   private getFilteredProducts() {

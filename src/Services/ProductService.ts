@@ -4,9 +4,14 @@ import { Prisma } from "@prisma/client";
 import { Product } from "@prisma/client";
 import { plainToClass } from "class-transformer";
 import { ProductDTO } from "../Models/ProductDTO.js";
+import ReviewService from "./ReviewService.js";
 class ProductService {
   private IS_SELLING = true;
   private QUANTITY = 1;
+  private reviewService: ReviewService;
+  constructor() {
+    this.reviewService = new ReviewService();
+  }
   async getFilteredProducts(req: Request, res: Response) {
     let {
       limit,
@@ -27,6 +32,7 @@ class ProductService {
         take: itemLimit,
         include: {
           productImages: true,
+          sale: true,
         },
         where: {
           is_selling: this.IS_SELLING,
@@ -57,7 +63,6 @@ class ProductService {
         })
         .send();
     } catch (error) {
-      console.log(error);
       res.status(500).send();
     }
   }
@@ -72,7 +77,9 @@ class ProductService {
           publisher: true,
           productImages: true,
           productType: true,
+          author: true,
           genre: true,
+          sale: true,
         },
       });
       const avgRating = await database.review.aggregate({
@@ -83,13 +90,25 @@ class ProductService {
           rating: true,
         },
       });
-      res.json(
-        plainToClass(
+      let canReview = false;
+      if (req.user) {
+        canReview = await this.reviewService.checkUserReviewEligibility.call(
+          this.reviewService,
+          req.user,
+          product.id
+        );
+      }
+      res.json({
+        product: plainToClass(
           ProductDTO,
-          { ...product, avgRating: avgRating._avg.rating || 0 },
+          {
+            ...product,
+            avgRating: avgRating._avg.rating || 0,
+          },
           { excludeExtraneousValues: true }
-        )
-      );
+        ),
+        canReview,
+      });
     } catch (error) {
       res.status(404).send();
     }
@@ -111,6 +130,7 @@ LIMIT 10`);
     return await database.product.findMany({
       include: {
         productImages: true,
+        sale: true,
       },
       where: {
         id: {
@@ -124,6 +144,7 @@ LIMIT 10`);
       take: 10,
       include: {
         productImages: true,
+        sale: true,
       },
       where: {
         is_selling: true,

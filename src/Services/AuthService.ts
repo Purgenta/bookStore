@@ -79,14 +79,14 @@ class AuthService {
       { user_id: user.id, role: user.role },
       `${process.env.ACCESS_TOKEN_SECRET_KEY}`,
       {
-        expiresIn: "10s",
+        expiresIn: "20min",
       }
     );
     const refresh_token = jwt.sign(
       { user_id: user.id, role: user.role },
       `${process.env.REFRESH_TOKEN_SECRET_KEY}`,
       {
-        expiresIn: "15min",
+        expiresIn: "1day",
       }
     );
     await database.refreshToken.create({
@@ -109,7 +109,7 @@ class AuthService {
       { user_id },
       `${process.env.ACCESS_TOKEN_SECRET_KEY}`,
       {
-        expiresIn: "15min",
+        expiresIn: "20min",
       }
     );
     res.status(200).send({ accessToken, role: req.role });
