@@ -1,6 +1,30 @@
 import { Request, Response } from "express";
 import database from "../Database/database.js";
 class CartService {
+  public async getUserCart(req: Request, res: Response) {
+    const cartItems = await database.product.findMany({
+      select: {
+        quantity: true,
+        price: true,
+        title: true,
+        productImages: true,
+        cartItem: true,
+        sale: true,
+        id: true,
+      },
+      where: {
+        cartItem: {
+          some: {
+            cart: {
+              user_id: req.user,
+              status: "ONGOING",
+            },
+          },
+        },
+      },
+    });
+    res.json(cartItems);
+  }
   private async createOrFindUserCart(user: number) {
     let userCart = await database.cart.findFirst({
       where: {
@@ -82,6 +106,32 @@ class CartService {
     } catch (error: any) {
       if (error?.message) res.status(400).send(error.message);
       else res.status(400).send();
+    }
+  }
+  public async deleteCartItem(req: Request, res: Response) {
+    try {
+      const { product_id } = req.body;
+      const cartItem = await database.cartItem.findFirst({
+        where: {
+          cart: {
+            status: "ONGOING",
+            user_id: req.user,
+          },
+          product_id: product_id as number,
+        },
+      });
+      if (!cartItem) throw new Error("Item isn't inside of your cart");
+      if (cartItem) {
+        await database.cartItem.delete({
+          where: {
+            id: cartItem.id,
+          },
+        });
+      }
+      res.status(200).send();
+    } catch (error: any) {
+      if (error?.message) res.status(400).send(error.message);
+      else res.status(500).send();
     }
   }
 }

@@ -14,6 +14,7 @@ class ReviewValidation extends Validation {
         .trim()
         .isNumeric()
         .isInt()
+        .toInt()
         .custom((value) => {
           if (value >= 1 && value <= 5) return true;
           else

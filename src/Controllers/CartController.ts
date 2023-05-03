@@ -13,16 +13,31 @@ class CartController extends Controller {
   }
   setRouter(): Router {
     const router = express.Router();
+    router.use(authenticatedMiddleWare);
+    router.get("/cartItems", this.getCartItems());
+    router.post("/addCartItem", ...this.addCartItem());
+    router.post("/deleteCartItem", ...this.deleteCartItem());
+    return router;
+  }
+  private addCartItem() {
     const cartItemValidation = new CartValidation()
       .setProductId()
       .setQuantity()
       .getValidation();
-    router.use(authenticatedMiddleWare);
-    router.post("/addCartItem", cartItemValidation, this.addCartItem());
-    return router;
+    return [
+      cartItemValidation,
+      this.cartService.addCartItem.bind(this.cartService),
+    ];
   }
-  private addCartItem() {
-    return this.cartService.addCartItem.bind(this.cartService);
+  private getCartItems() {
+    return this.cartService.getUserCart.bind(this.cartService);
+  }
+  private deleteCartItem() {
+    const cartValidation = new CartValidation().setProductId().getValidation();
+    return [
+      cartValidation,
+      this.cartService.deleteCartItem.bind(this.cartService),
+    ];
   }
 }
 export default CartController;

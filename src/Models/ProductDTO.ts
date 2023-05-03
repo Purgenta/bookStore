@@ -32,4 +32,6 @@ export class ProductDTO {
   description!: string;
   @Expose()
   publisher!: object;
+  @Expose()
+  similiarProducts!: object;
 }

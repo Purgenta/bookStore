@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import database from "../Database/database.js";
 class ReviewService {
   async checkUserReviewEligibility(user: number, product_id: number) {
@@ -33,7 +33,25 @@ class ReviewService {
     if (hasBoughtProduct) return true;
     return false;
   }
-  async addReview(req: Request, res: Response, next: NextFunction) {}
+  async addReview(req: Request, res: Response) {
+    const { product_id, rating, comment } = req.body;
+    if (
+      !(await this.checkUserReviewEligibility(req.user!, product_id as number))
+    )
+      res
+        .status(400)
+        .json({ error: "You're not eligible to review this product" })
+        .send();
+    const review = await database.review.create({
+      data: {
+        product_id,
+        rating,
+        comment,
+        user_id: req.user as number,
+      },
+    });
+    res.json(review).send();
+  }
   async getReviewsByProduct(req: Request, res: Response) {
     const { page, limit } = req.query;
     const { id } = req.params;

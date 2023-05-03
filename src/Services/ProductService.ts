@@ -1,6 +1,6 @@
 import database from "../Database/database.js";
 import { Request, Response } from "express";
-import { Prisma } from "@prisma/client";
+import { Prisma, User } from "@prisma/client";
 import { Product } from "@prisma/client";
 import { plainToClass } from "class-transformer";
 import { ProductDTO } from "../Models/ProductDTO.js";
@@ -78,7 +78,11 @@ class ProductService {
           productImages: true,
           productType: true,
           author: true,
-          genre: true,
+          genre: {
+            select: {
+              genre: true,
+            },
+          },
           sale: true,
         },
       });
@@ -104,6 +108,7 @@ class ProductService {
           {
             ...product,
             avgRating: avgRating._avg.rating || 0,
+            similiarProducts: await this.mostSimiliarProducts(+id),
           },
           { excludeExtraneousValues: true }
         ),
@@ -169,6 +174,87 @@ LIMIT 10`);
         excludeExtraneousValues: true,
       }),
     });
+  }
+  async mostSimiliarProducts(product_id: number) {
+    const usersThatHaveBoughtProduct = await database.$queryRaw<
+      Array<{ id: number }>
+    >`SELECT 
+    user.id
+FROM
+    user
+        INNER JOIN
+    cart ON cart.user_id = user.id
+        INNER JOIN
+    cartitem ON cartitem.cart_id = cart.id
+		INNER JOIN
+	\`order\` ON \`order\`.cart_id = cart.id
+WHERE
+    cartitem.product_id = ${product_id} AND cart.status = "ISSUED_ORDER" AND \`order\`.order_status = "DELIVERED"
+GROUP BY user.id`;
+
+    const relatedItems = await database.cartItem.groupBy({
+      by: ["product_id"],
+      where: {
+        product_id: {
+          not: product_id,
+        },
+        cart: {
+          user_id: {
+            in: usersThatHaveBoughtProduct.map((user) => user.id),
+          },
+          status: "ISSUED_ORDER",
+          order: {
+            some: { order_status: "DELIVERED" },
+          },
+        },
+      },
+      orderBy: {
+        _sum: {
+          quantity: "desc",
+        },
+      },
+    });
+    if (relatedItems.length >= 5) {
+      const items = relatedItems.slice(0, 5);
+      return await database.product.findMany({
+        include: {
+          productImages: true,
+          sale: true,
+        },
+        where: {
+          id: {
+            in: items.map((item) => item.product_id),
+          },
+        },
+      });
+    } else {
+      const related = relatedItems.map((item) => item.product_id);
+      const items = await database.product.findMany({
+        include: {
+          productImages: true,
+          sale: true,
+        },
+        where: {
+          id: {
+            in: related,
+          },
+        },
+      });
+      return items.concat(
+        await database.product.findMany({
+          take: 5 - items.length,
+          include: {
+            sale: true,
+            productImages: true,
+          },
+          where: {
+            id: {
+              notIn: [...related, product_id],
+            },
+          },
+        })
+      );
+    }
   }
 }
 export default ProductService;
