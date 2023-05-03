@@ -2,13 +2,13 @@ import database from "../Database/database.js";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import Service from "../Core/Service.js";
+import UserService from "./UserService.js";
 dotenv.config();
-class UserService extends Service {
-    async register(userDetails) {
-        const userExists = await this.checkIfUserExists(userDetails.email);
+class AuthService {
+    async register(req, res, next, userDetails) {
+        const userExists = await UserService.checkIfUserExists(userDetails.email);
         if (userExists) {
-            this.response.status(400).json({
+            res.status(400).json({
                 errors: {
                     email: {
                         msg: "A user with the said adress already exists",
@@ -24,7 +24,7 @@ class UserService extends Service {
                 ...userDetails,
             },
         });
-        this.response.status(201).send();
+        res.status(201).send();
     }
     async checkIfUserExists(email) {
         const user = await database.user.findFirst({
@@ -36,7 +36,7 @@ class UserService extends Service {
             return true;
         return false;
     }
-    async login(userLogin) {
+    async login(req, res, next, userLogin) {
         const user = await database.user.findFirst({
             where: {
                 email: userLogin.email,
@@ -49,19 +49,19 @@ class UserService extends Service {
             },
         });
         if (!user) {
-            this.response.status(400).send();
+            res.status(400).send();
             return;
         }
         const validPassword = await bcryptjs.compare(userLogin.password, user.password);
         if (!validPassword) {
-            this.response.status(400).send();
+            res.status(400).send();
             return;
         }
         const accessToken = jwt.sign({ user_id: user.id, role: user.role }, `${process.env.ACCESS_TOKEN_SECRET_KEY}`, {
-            expiresIn: "15min",
+            expiresIn: "10s",
         });
         const refreshToken = jwt.sign({ user_id: user.id, role: user.role }, `${process.env.REFRESH_TOKEN_SECRET_KEY}`, {
-            expiresIn: "1d",
+            expiresIn: "15min",
         });
         await database.refreshToken.create({
             data: {
@@ -69,19 +69,21 @@ class UserService extends Service {
                 user_id: user.id,
             },
         });
-        this.response.cookie("refresh_token", refreshToken, {
+        res.cookie("refresh_token", refreshToken, {
             httpOnly: true,
             maxAge: 24 * 60 * 60 * 1000,
+            sameSite: "none",
+            secure: true,
         });
-        this.response.status(200).json({ accessToken, role: user.role });
+        res.status(200).json({ accessToken, role: user.role });
     }
-    async issueRefreshToken(req, res) {
+    async issueAccessToken(req, res) {
         const user_id = req.user;
         const accessToken = jwt.sign({ user_id }, `${process.env.ACCESS_TOKEN_SECRET_KEY}`, {
-            expiresIn: "15min",
+            expiresIn: "1min",
         });
-        res.status(200).send({ accessToken });
+        res.status(200).send({ accessToken, role: req.role });
     }
 }
-export default UserService;
+export default AuthService;
 //# sourceMappingURL=AuthService.js.map

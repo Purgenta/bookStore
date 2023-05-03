@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
 }
 
 datasource db {
@@ -10,35 +10,46 @@ datasource db {
 model User {
   id           Int            @id @default(autoincrement())
   email        String         @unique
-  name         String
-  lastName     String
-  phoneNumber  String
-  createdAt    DateTime       @default(now())
+  name         String         @db.VarChar(100)
+  last_name     String        @db.VarChar(100)
+  phone_number  String
+  created_at    DateTime       @default(now())
   password     String
   role         Role           @default(USER)
   refreshToken RefreshToken[]
   cart         Cart[]
+  favourites Favourites[]
   reviews      Review[]
 }
 
 model Product {
   id             Int             @id @default(autoincrement())
-  pageNumber     Int
+  page_number     Int
   title          String
-  publishingDate DateTime
+  publishing_date DateTime
   is_selling     Boolean         @default(true)
   price          Float
   type_id        Int
   quantity       Int
   publisher_id   Int
+  description String @db.MediumText()
+  author_id Int 
+  author Author @relation(fields: [author_id] ,references: [id])
   cartItem       CartItem[]
   genre          ProductGenre[]
   reviews        Review[]
+  favourites Favourites[]
   productImages  ProductImages[]
   publisher      Publisher       @relation(fields: [publisher_id], references: [id])
-  product_Type   ProductType     @relation(fields: [type_id], references: [id])
+  productType   ProductType     @relation(fields: [type_id], references: [id])
+  sale  Sale?
 }
-
+model Author {
+  id Int @id @default(autoincrement())
+  name String 
+  last_name String
+  product Product[] 
+}
 model Genre {
   id       Int            @id @default(autoincrement())
   name     String         @unique
@@ -56,7 +67,7 @@ model ProductGenre {
 
 model Review {
   id         Int     @id @default(autoincrement())
-  comment    String
+  comment    String  @db.MediumText()
   rating     Float
   user_id    Int
   product_id Int
@@ -90,9 +101,15 @@ model Cart {
   user       User       @relation(fields: [user_id], references: [id])
   cartItems  CartItem[]
   order      Order[]
-  cartStatus CartStatus @default(ONGOING)
+  status CartStatus @default(ONGOING)
 }
-
+model Favourites {
+  id Int @id @default(autoincrement())
+  user_id Int 
+  product_id Int
+  user User @relation(fields: [user_id],references: [id])
+  product Product @relation(fields: [product_id],references: [id])
+}
 model CartItem {
   id         Int     @id @default(autoincrement())
   product_id Int
@@ -104,7 +121,7 @@ model CartItem {
 
 model RefreshToken {
   id           Int    @id @default(autoincrement())
-  refreshToken String
+  refresh_token String
   user         User   @relation(fields: [user_id], references: [id])
   user_id      Int
 }
@@ -112,7 +129,14 @@ model RefreshToken {
 model ProductImages {
   id         Int     @id @default(autoincrement())
   product_id Int
+  image_url String 
   product    Product @relation(fields: [product_id], references: [id])
+}
+model Sale {
+  id Int @id @default(autoincrement())
+  product_id Int @unique
+  discount Int 
+  product Product?  @relation(fields: [product_id],references: [id])
 }
 
 enum Role {

@@ -24,6 +24,28 @@ const authenticatedMiddleWare = (
     }
   );
 };
+export const authenticatedOrAnonymous = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const authHeader = req?.headers?.authorization;
+  if (authHeader) {
+    const accessToken = authHeader.slice(7);
+    jwt.verify(
+      accessToken,
+      `${process.env.ACCESS_TOKEN_SECRET_KEY}`,
+      (err, decoded) => {
+        if (!err) {
+          let user = decoded as JwtPayload;
+          req.user = user.user_id;
+          req.role = user.role;
+        }
+      }
+    );
+  }
+  next();
+};
 export const refreshTokenMiddleware = (
   req: Request,
   res: Response,
@@ -37,15 +59,12 @@ export const refreshTokenMiddleware = (
     cookies[`refresh_token`] as string,
     process.env.REFRESH_TOKEN_SECRET_KEY as string,
     async (err, decoded) => {
-      if (err) {
-        console.log(err);
-        return res.status(401).send();
-      }
+      if (err) return res.status(401).send();
       let refreshToken = decoded as JwtPayload;
       const foundRefreshToken = await database.refreshToken.findFirst({
         where: {
           user_id: refreshToken.user_id,
-          refreshToken: cookies[`refresh_token`],
+          refresh_token: cookies[`refresh_token`],
         },
         include: { user: true },
       });
@@ -53,7 +72,8 @@ export const refreshTokenMiddleware = (
         return res.status(401).send();
       }
       if (
-        foundRefreshToken?.refreshToken !== (cookies[`refresh_token`] as string)
+        foundRefreshToken?.refresh_token !==
+        (cookies[`refresh_token`] as string)
       ) {
         return res.status(401).send();
       }

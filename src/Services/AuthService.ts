@@ -6,26 +6,31 @@ import dotenv from "dotenv";
 import { Role } from "@prisma/client";
 import UserService from "./UserService.js";
 dotenv.config();
-export type UserDetails = {
+type UserDetails = {
   email: string;
   name: string;
-  lastName: string;
+  last_name: string;
   password: string;
-  phoneNumber: string;
+  phone_number: string;
 };
-export type UserLogin = Omit<UserDetails, "name" | "lastName" | "phoneNumber">;
+export type UserLogin = Omit<
+  UserDetails,
+  "name" | "last_name" | "phone_number"
+>;
 export type JwtPayload = {
   user_id: number;
   role: Role;
 };
 class AuthService {
-  public async register(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-    userDetails: UserDetails
-  ) {
-    const userExists = await UserService.checkIfUserExists(userDetails.email);
+  private userService: UserService;
+  constructor() {
+    this.userService = new UserService();
+  }
+  public async register(req: Request, res: Response, next: NextFunction) {
+    const userDetails = req.body as UserDetails;
+    const userExists = await this.userService.checkIfUserExists(
+      userDetails.email
+    );
     if (userExists) {
       res.status(400).json({
         errors: {
@@ -45,21 +50,8 @@ class AuthService {
     });
     res.status(201).send();
   }
-  private async checkIfUserExists(email: string): Promise<boolean> {
-    const user = await database.user.findFirst({
-      where: {
-        email: email,
-      },
-    });
-    if (user) return true;
-    return false;
-  }
-  public async login(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-    userLogin: UserLogin
-  ) {
+  public async login(req: Request, res: Response, next: NextFunction) {
+    const userLogin: UserLogin = req.body;
     const user = await database.user.findFirst({
       where: {
         email: userLogin.email,
@@ -87,23 +79,23 @@ class AuthService {
       { user_id: user.id, role: user.role },
       `${process.env.ACCESS_TOKEN_SECRET_KEY}`,
       {
-        expiresIn: "10s",
+        expiresIn: "20min",
       }
     );
-    const refreshToken = jwt.sign(
+    const refresh_token = jwt.sign(
       { user_id: user.id, role: user.role },
       `${process.env.REFRESH_TOKEN_SECRET_KEY}`,
       {
-        expiresIn: "15min",
+        expiresIn: "1day",
       }
     );
     await database.refreshToken.create({
       data: {
-        refreshToken,
+        refresh_token,
         user_id: user.id,
       },
     });
-    res.cookie("refresh_token", refreshToken, {
+    res.cookie("refresh_token", refresh_token, {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
       sameSite: "none",
@@ -117,7 +109,7 @@ class AuthService {
       { user_id },
       `${process.env.ACCESS_TOKEN_SECRET_KEY}`,
       {
-        expiresIn: "1min",
+        expiresIn: "20min",
       }
     );
     res.status(200).send({ accessToken, role: req.role });

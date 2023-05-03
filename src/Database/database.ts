@@ -4,7 +4,8 @@ declare global {
   var __database: PrismaClient | undefined;
 }
 if (!global.__database) {
-  global.__database = new PrismaClient();
+  const prisma = new PrismaClient();
+  global.__database = prisma;
 }
 database = global.__database;
 export default database;

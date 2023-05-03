@@ -1,10 +1,6 @@
-import { ValidationChain, body, validationResult } from "express-validator";
-import { Request, Response, NextFunction } from "express";
-class UserValidation {
-  private chain: (
-    | ValidationChain
-    | ((req: Request, res: Response, next: NextFunction) => void)
-  )[] = [];
+import { body } from "express-validator";
+import Validation from "../Core/Validation.js";
+class UserValidation extends Validation {
   setEmail() {
     this.chain.push(body("email").isEmail().trim());
     return this;
@@ -20,23 +16,14 @@ class UserValidation {
     return this;
   }
   setLastName() {
-    this.chain.push(body("lastName").isAlpha().trim().isLength({ min: 3 }));
+    this.chain.push(body("last_name").isAlpha().trim().isLength({ min: 3 }));
     return this;
   }
   setNumber() {
-    this.chain.push(body("phoneNumber").isNumeric().isLength({ min: 9 }));
+    this.chain.push(
+      body("phone_number").isNumeric().isLength({ min: 8, max: 20 })
+    );
     return this;
-  }
-  getValidation() {
-    this.chain.push((req: Request, res: Response, next: NextFunction) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({ errors: errors.mapped() });
-        return;
-      }
-      next();
-    });
-    return this.chain;
   }
 }
 export { UserValidation };
