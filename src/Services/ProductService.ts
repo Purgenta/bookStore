@@ -1,6 +1,6 @@
 import database from "../Database/database.js";
 import { Request, Response } from "express";
-import { Prisma, User } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { Product } from "@prisma/client";
 import { plainToClass } from "class-transformer";
 import { ProductDTO } from "../Models/ProductDTO.js";
@@ -16,16 +16,23 @@ class ProductService {
     let {
       limit,
       page,
-      priceLowerBound,
-      priceUpperBound,
-      publishedDateLowerBound,
-      publishedDateHigherBound,
-    } = req.query;
+      priceLb,
+      priceUb,
+      publishedDateLb,
+      publishedDateUb,
+      genres,
+      orderBy,
+      publishers,
+      sort,
+      q,
+    } = req.body;
     let itemLimit = 15;
     if (limit) itemLimit = parseInt(limit as string);
+    const genreId = genres as string[];
+    const publisherId = publishers as string[];
     let skip = 0;
-    if (page) skip = itemLimit * parseInt(page as string);
     try {
+      if (page) skip = itemLimit * (parseInt(page as string) - 1);
       type Filter = Parameters<typeof database.product.findMany>;
       const filter: Filter[0] = {
         skip,
@@ -36,30 +43,46 @@ class ProductService {
         },
         where: {
           is_selling: this.IS_SELLING,
+          publisher: {
+            id: {
+              in: publisherId ? publisherId.map((publisher) => +publisher) : [],
+            },
+          },
           quantity: {
             gte: this.QUANTITY,
           },
+          title: {
+            contains: q ? `${q}` : undefined,
+          },
           price: {
-            gte: priceLowerBound ? +priceLowerBound : undefined,
-            lte: priceUpperBound ? +priceUpperBound : undefined,
+            gte: priceLb ? +priceLb : undefined,
+            lte: priceUb ? +priceUb : undefined,
           },
           publishing_date: {
-            gte: publishedDateLowerBound as string | undefined,
-            lte: publishedDateHigherBound as string | undefined,
+            gte: publishedDateLb ? new Date(publishedDateLb) : undefined,
+            lte: publishedDateUb ? new Date(publishedDateUb) : undefined,
+          },
+          genre: {
+            every: {
+              genre_id: {
+                in: genreId ? genreId.map((genre) => +genre) : [],
+              },
+            },
           },
         },
         orderBy: {
-          price: "desc",
+          [`${orderBy}`]: sort,
         },
       };
       const products = await database.product.findMany(filter);
-      const hasNextPage = await database.product.count();
+      const totalPages = (await database.product.count()) / itemLimit;
+
       res
         .json({
           products: plainToClass(ProductDTO, products, {
             excludeExtraneousValues: true,
           }),
-          hasNextPage,
+          totalPages: Math.ceil(totalPages),
         })
         .send();
     } catch (error) {
@@ -175,10 +198,8 @@ LIMIT 10`);
       }),
     });
   }
-  async mostSimiliarProducts(product_id: number) {
-    const usersThatHaveBoughtProduct = await database.$queryRaw<
-      Array<{ id: number }>
-    >`SELECT 
+  async getUsersThatHaveBoughtProduct(product_id: number) {
+    return await database.$queryRaw<Array<{ id: number }>>`SELECT 
     user.id
 FROM
     user
@@ -191,6 +212,11 @@ FROM
 WHERE
     cartitem.product_id = ${product_id} AND cart.status = "ISSUED_ORDER" AND \`order\`.order_status = "DELIVERED"
 GROUP BY user.id`;
+  }
+  async mostSimiliarProducts(product_id: number) {
+    const usersThatHaveBoughtProduct = await this.getUsersThatHaveBoughtProduct(
+      product_id
+    );
 
     const relatedItems = await database.cartItem.groupBy({
       by: ["product_id"],
@@ -255,6 +281,23 @@ GROUP BY user.id`;
         })
       );
     }
+  }
+  async getFilterOptions(req: Request, res: Response) {
+    const productInfo = await database.product.aggregate({
+      _min: {
+        price: true,
+        publishing_date: true,
+        page_number: true,
+      },
+      _max: {
+        price: true,
+        publishing_date: true,
+        page_number: true,
+      },
+    });
+    const genres = await database.genre.findMany();
+    const publishers = await database.publisher.findMany();
+    res.json({ productInfo, genres, publishers });
   }
 }
 export default ProductService;

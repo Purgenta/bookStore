@@ -11,7 +11,8 @@ class ProductController extends Controller {
   }
   setRouter(): Router {
     const router = express.Router();
-    router.get("/filteredProducts", this.getFilteredProducts());
+    router.get("/filterOptions", this.getFilterOptions());
+    router.post("/filteredProducts", this.getFilteredProducts());
     router.get("/showcasedProducts", this.getShowcasedProducts());
     router.get("/:id", authenticatedOrAnonymous, this.getProductById());
     return router;
@@ -24,6 +25,9 @@ class ProductController extends Controller {
   }
   private getShowcasedProducts() {
     return this.productService.getShowcasedProducts.bind(this.productService);
+  }
+  private getFilterOptions() {
+    return this.productService.getFilterOptions.bind(this.productService);
   }
 }
 export default ProductController;

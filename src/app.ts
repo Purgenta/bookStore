@@ -6,6 +6,7 @@ import ProductController from "./Controllers/ProductController.js";
 import UserController from "./Controllers/UserController.js";
 import CartController from "./Controllers/CartController.js";
 import ReviewController from "./Controllers/ReviewController.js";
+import OrderController from "./Controllers/OrderController.js";
 class App {
   private app: express.Application;
   private authController: AuthController;
@@ -13,10 +14,12 @@ class App {
   private userController: UserController;
   private cartController: CartController;
   private reviewController: ReviewController;
+  private orderController: OrderController;
   constructor() {
     this.app = express();
     this.authController = new AuthController();
     this.productController = new ProductController();
+    this.orderController = new OrderController();
     this.userController = new UserController();
     this.cartController = new CartController();
     this.reviewController = new ReviewController();
@@ -35,6 +38,7 @@ class App {
     this.app.use("/user", this.userController.setRouter());
     this.app.use("/cart", this.cartController.setRouter());
     this.app.use("/review", this.reviewController.setRouter());
+    this.app.use("/order", this.orderController.setRouter());
     this.app.use("/", (req, res) => {
       res.status(404).send();
     });

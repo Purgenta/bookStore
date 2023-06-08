@@ -12,6 +12,23 @@ class UserService {
     if (user) return true;
     return false;
   }
+  async getUserProfile(req: Request, res: Response) {
+    const user = req.user as number;
+    const userProfile = await database.user.findUnique({
+      where: {
+        id: user,
+      },
+      include: {
+        cart: {
+          select: { order: { where: { order_status: "DELIVERED" } } },
+          where: {
+            status: "ISSUED_ORDER",
+          },
+        },
+      },
+    });
+    return res.json(userProfile);
+  }
   async addFavourite(req: Request, res: Response) {
     const user = req.user as number;
     const { product_id } = req.body;
@@ -67,6 +84,30 @@ class UserService {
     res.json(
       plainToClass(ProductDTO, favourites, { excludeExtraneousValues: true })
     );
+  }
+  async getUserOrders(req: Request, res: Response) {
+    const { user } = req;
+    const orders = await database.order.findMany({
+      where: {
+        cart: {
+          user_id: user,
+        },
+      },
+      select: {
+        order_status: true,
+        ordered_at: true,
+        id: true,
+        orderReview: true,
+        cart: {
+          select: {
+            cartItems: {
+              select: { product: true },
+            },
+          },
+        },
+      },
+    });
+    res.json(orders);
   }
 }
 export default UserService;

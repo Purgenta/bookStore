@@ -8,7 +8,14 @@ class CartService {
         price: true,
         title: true,
         productImages: true,
-        cartItem: true,
+        cartItem: {
+          where: {
+            cart: {
+              status: "ONGOING",
+              user_id: req.user,
+            },
+          },
+        },
         sale: true,
         id: true,
       },
@@ -132,6 +139,50 @@ class CartService {
     } catch (error: any) {
       if (error?.message) res.status(400).send(error.message);
       else res.status(500).send();
+    }
+  }
+  public async setCartItem(req: Request, res: Response) {
+    const { product_id, quantity } = req.body;
+    const { user } = req;
+    const product = await database.product.findUnique({
+      where: { id: product_id },
+    });
+    if (!product) return res.status(400).send();
+    if (product.quantity >= quantity) {
+      const userCart = await this.createOrFindUserCart(user!);
+      const cartItem = await this.findCartItem(userCart.id, product_id);
+      if (!cartItem) {
+        await database.cartItem.create({
+          data: { quantity, product_id, cart_id: userCart.id },
+        });
+      } else
+        await database.cartItem.update({
+          data: { quantity },
+          where: { id: cartItem.id },
+        });
+      return res.status(200).send();
+    } else {
+      return res.json({
+        errors: { quantity: `Available quantity is ${product.quantity}` },
+      });
+    }
+  }
+  public async checkout(req: Request, res: Response) {
+    const { user } = req;
+    const cart = await database.cart.findFirst({
+      where: { user_id: user, status: "ONGOING" },
+      select: { cartItems: true, id: true },
+    });
+    if (!cart || !cart.cartItems.length) res.status(400).send();
+    else {
+      await database.cart.update({
+        where: { id: cart.id },
+        data: { status: "ISSUED_ORDER" },
+      });
+      await database.order.create({
+        data: { cart_id: cart.id, order_status: "ONGOING" },
+      });
+      res.status(201).send();
     }
   }
 }

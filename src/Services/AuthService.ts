@@ -114,5 +114,69 @@ class AuthService {
     );
     res.status(200).send({ accessToken, role: req.role });
   }
+  public async logout(req: Request, res: Response) {
+    res.cookie("refresh_token", "", {
+      httpOnly: true,
+      maxAge: 0,
+      sameSite: "none",
+      secure: true,
+    });
+  }
+  public async changeUserInformation(req: Request, res: Response) {
+    const { name, last_name, phone_number, email } = req.body;
+    const { user } = req;
+    const foundUser = await database.user.findFirst({ where: { id: user } });
+    if (!foundUser) return res.status(500).send();
+    if (foundUser.email === email) {
+      await database.user.update({
+        where: {
+          id: user,
+        },
+        data: {
+          name,
+          last_name,
+          phone_number,
+        },
+      });
+    } else {
+      const userWithSameEmail = await database.user.findFirst({
+        where: { email },
+      });
+      if (userWithSameEmail) return res.status(400).send();
+      await database.user.update({
+        where: {
+          id: user,
+        },
+        data: {
+          email,
+          name,
+          last_name,
+          phone_number,
+        },
+      });
+    }
+    return res.status(200).send();
+  }
+  public async updateCredentials(req: Request, res: Response) {
+    const { currentPassword, newPassword } = req.body;
+    const user = await database.user.findFirst({ where: { id: req.user } });
+    if (!user) return res.status(500).send();
+    const validPassword = await bcryptjs.compare(
+      currentPassword,
+      user.password
+    );
+    if (!validPassword) {
+      res.status(400).send();
+      return;
+    }
+    const passwordHash = await bcryptjs.hash(newPassword, 12);
+    await database.user.update({
+      where: { id: req.user },
+      data: {
+        password: passwordHash,
+      },
+    });
+    res.status(200).send();
+  }
 }
 export default AuthService;
