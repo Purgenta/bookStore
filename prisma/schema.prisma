@@ -17,9 +17,12 @@ model User {
   password     String
   role         Role           @default(USER)
   refreshToken RefreshToken[]
+  orderReviews OrderReview[]
   cart         Cart[]
   favourites Favourites[]
   reviews      Review[]
+  adress String?
+  prefferences UserPreferences?
 }
 
 model Product {
@@ -53,7 +56,8 @@ model Author {
 model Genre {
   id       Int            @id @default(autoincrement())
   name     String         @unique
-  products ProductGenre[]
+  products ProductGenre[] 
+  preferences UserPreferences[]
 }
 
 model ProductGenre {
@@ -85,6 +89,7 @@ model Order {
   id           Int         @id @default(autoincrement())
   order_status OrderStatus @default(ONGOING)
   ordered_at   DateTime    @default(now())
+  orderReview OrderReview?
   cart_id      Int
   cart         Cart        @relation(fields: [cart_id], references: [id])
 }
@@ -138,7 +143,22 @@ model Sale {
   discount Int 
   product Product?  @relation(fields: [product_id],references: [id])
 }
-
+model OrderReview{
+  id Int @id @default(autoincrement())
+  user_id Int 
+  order_id Int @unique
+  user User @relation(fields: [user_id],references: [id])
+  order Order @relation(fields: [order_id],references: [id])
+  comment String @db.MediumText
+  rating Int
+}
+model UserPreferences {
+  id Int @id @default(autoincrement())
+  user_id Int @unique
+  genre_id Int 
+  genre Genre @relation(fields: [genre_id],references: [id])
+  user User @relation(fields: [user_id],references: [id])
+}
 enum Role {
   USER
   ADMIN

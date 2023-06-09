@@ -14,21 +14,19 @@ class AuthController extends Controller {
   }
   setRouter(): Router {
     const router = express.Router();
-    router.get("/protectedRoute", authenticatedMiddleWare, (req, res) =>
-      res.send({
-        greet: "Hi",
-        user: req.user,
-      })
-    );
     router.route("/register").post(...this.register());
     router.route("/refreshToken").get(...this.accessToken());
     router.route("/login").post(...this.login());
+    router.use(authenticatedMiddleWare);
+    router.route("/updateInformation").put(...this.updateInformation());
+    router.route("/updateCredentials").put(...this.updateCredentials());
+    router.route("/logout").get(this.logout());
     return router;
   }
   private register() {
     const validateUserDetails = new UserValidation()
       .setEmail()
-      .setPassword()
+      .setPassword("password")
       .setName()
       .setLastName()
       .setNumber()
@@ -42,7 +40,7 @@ class AuthController extends Controller {
   private login() {
     const validateUserLogin = new UserValidation()
       .setEmail()
-      .setPassword()
+      .setPassword("password")
       .getValidation();
     return [
       validateUserLogin,
@@ -55,6 +53,33 @@ class AuthController extends Controller {
       refreshTokenMiddleware,
       this.authService.issueAccessToken.bind(this.authService),
     ];
+  }
+  private updateInformation() {
+    const validateInformation = new UserValidation()
+      .setEmail()
+      .setName()
+      .setLastName()
+      .setNumber()
+      .getValidation();
+    return [
+      validateInformation,
+      this.mapErrors,
+      this.authService.changeUserInformation.bind(this.authService),
+    ];
+  }
+  private updateCredentials() {
+    const validateCredentials = new UserValidation()
+      .setPassword("currentPassword")
+      .setPassword("newPassword")
+      .getValidation();
+    return [
+      validateCredentials,
+      this.mapErrors,
+      this.authService.updateCredentials.bind(this.authService),
+    ];
+  }
+  private logout() {
+    return this.authService.logout.bind(this.authService);
   }
 }
 export default AuthController;

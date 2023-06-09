@@ -16,7 +16,9 @@ class CartController extends Controller {
     router.use(authenticatedMiddleWare);
     router.get("/cartItems", this.getCartItems());
     router.post("/addCartItem", ...this.addCartItem());
+    router.post("/setCartItem", ...this.setCartItem());
     router.post("/deleteCartItem", ...this.deleteCartItem());
+    router.post("/checkout", this.checkout());
     return router;
   }
   private addCartItem() {
@@ -38,6 +40,19 @@ class CartController extends Controller {
       cartValidation,
       this.cartService.deleteCartItem.bind(this.cartService),
     ];
+  }
+  private setCartItem() {
+    const cartValidation = new CartValidation()
+      .setProductId()
+      .setQuantity()
+      .getValidation();
+    return [
+      cartValidation,
+      this.cartService.setCartItem.bind(this.cartService),
+    ];
+  }
+  private checkout() {
+    return this.cartService.checkout.bind(this.cartService);
   }
 }
 export default CartController;

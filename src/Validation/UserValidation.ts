@@ -5,9 +5,9 @@ class UserValidation extends Validation {
     this.chain.push(body("email").isEmail().trim());
     return this;
   }
-  setPassword() {
+  setPassword(field: string) {
     this.chain.push(
-      body("password").isAlphanumeric().isLength({ min: 5, max: 16 }).trim()
+      body(field).isAlphanumeric().isLength({ min: 5, max: 16 }).trim()
     );
     return this;
   }
@@ -24,6 +24,11 @@ class UserValidation extends Validation {
       body("phone_number").isNumeric().isLength({ min: 8, max: 20 })
     );
     return this;
+  }
+  setAdress() {
+    this.chain.push(
+      body("adress").isAlphanumeric().trim().isLength({ max: 30, min: 10 })
+    );
   }
 }
 export { UserValidation };

@@ -12,6 +12,28 @@ class UserService {
     if (user) return true;
     return false;
   }
+  async getUserProfile(req: Request, res: Response) {
+    const user = req.user as number;
+    const userProfile = await database.user.findUnique({
+      where: {
+        id: user,
+      },
+      include: {
+        prefferences: {
+          select: {
+            genre: true,
+          },
+        },
+        cart: {
+          select: { order: { where: { order_status: "DELIVERED" } } },
+          where: {
+            status: "ISSUED_ORDER",
+          },
+        },
+      },
+    });
+    return res.json(userProfile);
+  }
   async addFavourite(req: Request, res: Response) {
     const user = req.user as number;
     const { product_id } = req.body;
@@ -35,6 +57,30 @@ class UserService {
     } catch (error) {
       res.status(400).send();
     }
+  }
+  async setPrefferences(req: Request, res: Response) {
+    const { genre_id } = req.body;
+    const genre = await database.genre.findFirst({ where: { id: genre_id } });
+    if (!genre) return res.status(400).send();
+    const userPref = await database.userPreferences.findFirst({
+      where: { user_id: req.user },
+    });
+    if (userPref) {
+      await database.userPreferences.update({
+        where: {
+          id: userPref.id,
+        },
+        data: { genre_id },
+      });
+    } else {
+      await database.userPreferences.create({
+        data: {
+          user_id: req.user!,
+          genre_id,
+        },
+      });
+    }
+    return res.status(201).send();
   }
   async removeFavourite(req: Request, res: Response) {
     const user = req.user as number;
@@ -67,6 +113,30 @@ class UserService {
     res.json(
       plainToClass(ProductDTO, favourites, { excludeExtraneousValues: true })
     );
+  }
+  async getUserOrders(req: Request, res: Response) {
+    const { user } = req;
+    const orders = await database.order.findMany({
+      where: {
+        cart: {
+          user_id: user,
+        },
+      },
+      select: {
+        order_status: true,
+        ordered_at: true,
+        id: true,
+        orderReview: true,
+        cart: {
+          select: {
+            cartItems: {
+              select: { product: true },
+            },
+          },
+        },
+      },
+    });
+    res.json(orders);
   }
 }
 export default UserService;
