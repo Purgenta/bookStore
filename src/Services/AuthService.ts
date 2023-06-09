@@ -12,10 +12,11 @@ type UserDetails = {
   last_name: string;
   password: string;
   phone_number: string;
+  adress: string;
 };
 export type UserLogin = Omit<
   UserDetails,
-  "name" | "last_name" | "phone_number"
+  "name" | "last_name" | "phone_number" | "adress"
 >;
 export type JwtPayload = {
   user_id: number;
@@ -123,7 +124,7 @@ class AuthService {
     });
   }
   public async changeUserInformation(req: Request, res: Response) {
-    const { name, last_name, phone_number, email } = req.body;
+    const { name, last_name, phone_number, email, adress } = req.body;
     const { user } = req;
     const foundUser = await database.user.findFirst({ where: { id: user } });
     if (!foundUser) return res.status(500).send();
@@ -133,6 +134,7 @@ class AuthService {
           id: user,
         },
         data: {
+          adress,
           name,
           last_name,
           phone_number,

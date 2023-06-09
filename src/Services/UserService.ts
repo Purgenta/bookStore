@@ -19,6 +19,11 @@ class UserService {
         id: user,
       },
       include: {
+        prefferences: {
+          select: {
+            genre: true,
+          },
+        },
         cart: {
           select: { order: { where: { order_status: "DELIVERED" } } },
           where: {
@@ -52,6 +57,30 @@ class UserService {
     } catch (error) {
       res.status(400).send();
     }
+  }
+  async setPrefferences(req: Request, res: Response) {
+    const { genre_id } = req.body;
+    const genre = await database.genre.findFirst({ where: { id: genre_id } });
+    if (!genre) return res.status(400).send();
+    const userPref = await database.userPreferences.findFirst({
+      where: { user_id: req.user },
+    });
+    if (userPref) {
+      await database.userPreferences.update({
+        where: {
+          id: userPref.id,
+        },
+        data: { genre_id },
+      });
+    } else {
+      await database.userPreferences.create({
+        data: {
+          user_id: req.user!,
+          genre_id,
+        },
+      });
+    }
+    return res.status(201).send();
   }
   async removeFavourite(req: Request, res: Response) {
     const user = req.user as number;

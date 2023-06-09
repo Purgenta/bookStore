@@ -18,6 +18,7 @@ class UserController extends Controller {
     router.post("/addFavourite", this.addFavourite());
     router.get("/profile", this.getUserProfile());
     router.get("/orders", this.getUserOrders());
+    router.post("/prefferences", this.setPrefferences());
     return router;
   }
   private getUserFavourites() {
@@ -34,6 +35,9 @@ class UserController extends Controller {
   }
   private getUserOrders() {
     return this.userService.getUserOrders.bind(this.userService);
+  }
+  private setPrefferences() {
+    return this.userService.setPrefferences.bind(this.userService);
   }
 }
 export default UserController;
