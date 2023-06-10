@@ -4,7 +4,7 @@ import { ProductDTO } from "../Models/ProductDTO.js";
 import { Request, Response } from "express";
 class UserService {
   async checkIfUserExists(email: string): Promise<boolean> {
-    const user = await database.user.findFirst({
+    const user = await database.user.findUnique({
       where: {
         email: email,
       },
