@@ -29,7 +29,12 @@ class App {
     this.app.use(
       cors({
         credentials: true,
-        origin: ["http://127.0.0.1:5173", "http://127.0.0.1:4173"],
+        origin: [
+          "http://127.0.0.1:5173",
+          "http://127.0.0.1:4173",
+          "http://localhost:5173",
+          "http://localhost:4173",
+        ],
       })
     );
     this.app.use(cookieParser());
