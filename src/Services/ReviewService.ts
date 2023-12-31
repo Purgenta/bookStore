@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
 import database from "../Database/database.js";
 class ReviewService {
-  async checkUserReviewEligibility(user: number, product_id: number) {
+  async checkUserReviewEligibility(user: string, productId: string) {
     const reviewed = await database.review.findFirst({
       where: {
         product: {
-          id: product_id,
+          id: productId,
         },
         user: {
           id: user,
@@ -15,7 +15,7 @@ class ReviewService {
     if (reviewed) return false;
     const hasBoughtProduct = await database.order.findFirst({
       where: {
-        order_status: "DELIVERED",
+        orderStatus: "DELIVERED",
         cart: {
           user: {
             id: user,
@@ -23,7 +23,7 @@ class ReviewService {
           cartItems: {
             some: {
               product: {
-                id: product_id,
+                id: productId,
               },
             },
           },
@@ -35,19 +35,17 @@ class ReviewService {
   }
   async addReview(req: Request, res: Response) {
     const { product_id, rating, comment } = req.body;
-    if (
-      !(await this.checkUserReviewEligibility(req.user!, product_id as number))
-    )
+    if (!(await this.checkUserReviewEligibility(req.user!, product_id)))
       res
         .status(400)
         .json({ error: "You're not eligible to review this product" })
         .send();
     const review = await database.review.create({
       data: {
-        product_id,
+        productId: product_id,
         rating,
         comment,
-        user_id: req.user as number,
+        userId: req.user!,
       },
     });
     res.json(review).send();
@@ -69,18 +67,18 @@ class ReviewService {
         skip,
         take: limitDefault,
         where: {
-          product_id: +id,
+          productId: id,
         },
         include: {
           user: {
             select: {
               name: true,
-              last_name: true,
+              lastName: true,
             },
           },
         },
       });
-      const count = await this.getReviewCount(+id);
+      const count = await this.getReviewCount(id);
       const hasNextPage = count - skip - limitDefault;
       res.status(200).json({
         reviews: reviews,
@@ -90,11 +88,11 @@ class ReviewService {
       res.status(400).send();
     }
   }
-  private async getReviewCount(product_id: number) {
+  private async getReviewCount(product_id: string) {
     try {
       const reviewCount = await database.review.count({
         where: {
-          product_id,
+          productId: product_id,
         },
       });
       return reviewCount;

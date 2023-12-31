@@ -4,7 +4,7 @@ class OrderService {
   public async addOrderReview(req: Request, res: Response) {
     const { order_id, comment, rating } = req.body;
     const order = await database.order.findFirst({
-      where: { id: order_id, cart: { user_id: req.user } },
+      where: { id: order_id, cart: { userId: req.user } },
     });
     if (!order) return res.status;
     const orderReview = await database.orderReview.findFirst({
@@ -12,7 +12,7 @@ class OrderService {
     });
     if (orderReview) return res.status(400).send();
     await database.orderReview.create({
-      data: { order_id: order.id, rating, comment, user_id: req.user! },
+      data: { orderId: order.id, rating, comment, userId: req.user! },
     });
     return res.status(201).send();
   }

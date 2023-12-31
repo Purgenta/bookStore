@@ -1,164 +1,77 @@
 generator client {
-  provider      = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id           Int            @id @default(autoincrement())
-  email        String         @unique
-  name         String         @db.VarChar(100)
-  last_name     String        @db.VarChar(100)
-  phone_number  String
-  created_at    DateTime       @default(now())
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  email        String          @unique
+  name         String
+  lastName     String
+  phoneNumber  String
+  createdAt    DateTime        @default(now())
   password     String
-  role         Role           @default(USER)
+  role         Role            @default(USER)
   refreshToken RefreshToken[]
   orderReviews OrderReview[]
   cart         Cart[]
-  favourites Favourites[]
+  favourites   Favourites[]
   reviews      Review[]
-  adress String?
-  prefferences UserPreferences?
+  address      String?
+  preferences  UserPreferences?
 }
 
 model Product {
-  id             Int             @id @default(autoincrement())
-  page_number     Int
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  pageNumber     Int
   title          String
-  publishing_date DateTime
-  is_selling     Boolean         @default(true)
+  publishingDate DateTime
+  isSelling      Boolean        @default(true)
   price          Float
-  type_id        Int
+  typeId         String
   quantity       Int
-  publisher_id   Int
-  description String @db.MediumText()
-  author_id Int 
-  author Author @relation(fields: [author_id] ,references: [id])
+  publisherId    String
+  description    String
+  authorId       String
+  author         Author         @relation(fields: [authorId], references: [id])
   cartItem       CartItem[]
   genre          ProductGenre[]
   reviews        Review[]
-  favourites Favourites[]
-  productImages  ProductImages[]
-  publisher      Publisher       @relation(fields: [publisher_id], references: [id])
-  productType   ProductType     @relation(fields: [type_id], references: [id])
-  sale  Sale?
+  favourites     Favourites[]
+  productImages  ProductImage[]
+  publisher      Publisher      @relation(fields: [publisherId], references: [id])
+  productType    ProductType    @relation(fields: [typeId], references: [id])
+  sale           Sale?
 }
+
 model Author {
-  id Int @id @default(autoincrement())
-  name String 
-  last_name String
-  product Product[] 
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  name    String
+  lastName String
+  product Product[]
 }
+
 model Genre {
-  id       Int            @id @default(autoincrement())
-  name     String         @unique
-  products ProductGenre[] 
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  name       String  @unique
+  products   ProductGenre[]
   preferences UserPreferences[]
 }
 
 model ProductGenre {
-  product_id Int
-  genre_id   Int
-  product    Product @relation(fields: [product_id], references: [id])
-  genre      Genre   @relation(fields: [genre_id], references: [id])
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  productId String  @map("_productId") @db.ObjectId
+  genreId   String  @map("_genreId") @db.ObjectId
+  product   Product @relation(fields: [productId], references: [id])
+  genre     Genre   @relation(fields: [genreId], references: [id])
 
-  @@id([product_id, genre_id])
-}
-
-model Review {
-  id         Int     @id @default(autoincrement())
-  comment    String  @db.MediumText()
-  rating     Float
-  user_id    Int
-  product_id Int
-  user       User    @relation(fields: [user_id], references: [id])
-  product    Product @relation(fields: [product_id], references: [id])
 }
 
-model Publisher {
-  id      Int       @id @default(autoincrement())
-  name    String    @unique
-  product Product[]
-}
 
-model Order {
-  id           Int         @id @default(autoincrement())
-  order_status OrderStatus @default(ONGOING)
-  ordered_at   DateTime    @default(now())
-  orderReview OrderReview?
-  cart_id      Int
-  cart         Cart        @relation(fields: [cart_id], references: [id])
-}
-
-model ProductType {
-  id      Int       @id @default(autoincrement())
-  type    String    @unique
-  product Product[]
-}
-
-model Cart {
-  id         Int        @id @default(autoincrement())
-  user_id    Int
-  user       User       @relation(fields: [user_id], references: [id])
-  cartItems  CartItem[]
-  order      Order[]
-  status CartStatus @default(ONGOING)
-}
-model Favourites {
-  id Int @id @default(autoincrement())
-  user_id Int 
-  product_id Int
-  user User @relation(fields: [user_id],references: [id])
-  product Product @relation(fields: [product_id],references: [id])
-}
-model CartItem {
-  id         Int     @id @default(autoincrement())
-  product_id Int
-  cart_id    Int
-  quantity   Int
-  product    Product @relation(fields: [product_id], references: [id])
-  cart       Cart    @relation(fields: [cart_id], references: [id])
-}
-
-model RefreshToken {
-  id           Int    @id @default(autoincrement())
-  refresh_token String
-  user         User   @relation(fields: [user_id], references: [id])
-  user_id      Int
-}
-
-model ProductImages {
-  id         Int     @id @default(autoincrement())
-  product_id Int
-  image_url String 
-  product    Product @relation(fields: [product_id], references: [id])
-}
-model Sale {
-  id Int @id @default(autoincrement())
-  product_id Int @unique
-  discount Int 
-  product Product?  @relation(fields: [product_id],references: [id])
-}
-model OrderReview{
-  id Int @id @default(autoincrement())
-  user_id Int 
-  order_id Int @unique
-  user User @relation(fields: [user_id],references: [id])
-  order Order @relation(fields: [order_id],references: [id])
-  comment String @db.MediumText
-  rating Int
-}
-model UserPreferences {
-  id Int @id @default(autoincrement())
-  user_id Int @unique
-  genre_id Int 
-  genre Genre @relation(fields: [genre_id],references: [id])
-  user User @relation(fields: [user_id],references: [id])
-}
 enum Role {
   USER
   ADMIN
@@ -167,6 +80,102 @@ enum Role {
 enum CartStatus {
   ONGOING
   ISSUED_ORDER
+}
+
+model Review {
+   id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  comment    String  
+  rating     Float
+  userId    String  @map("_userId") @db.ObjectId
+  productId String  @map("_productId") @db.ObjectId
+  user       User    @relation(fields: [userId], references: [id])
+  product    Product @relation(fields: [productId], references: [id])
+}
+
+model Publisher {
+   id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  name    String    @unique
+  product Product[]
+}
+
+model Order {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  orderStatus OrderStatus @default(ONGOING)
+  orderedAt   DateTime    @default(now())
+  orderReview OrderReview?
+  cartId     String      @map("_cartId") @db.ObjectId
+  cart         Cart        @relation(fields: [cartId], references: [id])
+}
+
+model ProductType {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  type    String    @unique
+  product Product[]
+}
+
+model Cart {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String  @map("_userId") @db.ObjectId
+  user       User       @relation(fields: [userId], references: [id])
+  cartItems  CartItem[]
+  orders     Order[]
+  status     CartStatus @default(ONGOING)
+}
+
+model Favourites {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String  @map("_userId") @db.ObjectId
+  productId String  @map("_productId") @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+model CartItem {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  productId String  @map("_productId") @db.ObjectId
+  cartId    String  @map("_cartId") @db.ObjectId
+  quantity   Int
+  product    Product @relation(fields: [productId], references: [id])
+  cart       Cart    @relation(fields: [cartId], references: [id])
+}
+
+model RefreshToken {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  refreshToken String
+  user         User   @relation(fields: [userId], references: [id])
+  userId      String @map("_userId") @db.ObjectId
+}
+
+model ProductImage {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  productId String  @map("_productId") @db.ObjectId
+  imageUrl  String
+  product    Product @relation(fields: [productId], references: [id])
+}
+
+model Sale {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  productId String  @map("_productId") @db.ObjectId @unique
+  discount  Int
+  product   Product? @relation(fields: [productId], references: [id])
+}
+
+model OrderReview{
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String  @map("_userId") @db.ObjectId
+  orderId   String  @map("_orderId") @db.ObjectId @unique
+  user    User    @relation(fields: [userId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id])
+  comment String  
+  rating  Int
+}
+
+model UserPreferences {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String @map("_userId") @db.ObjectId @unique
+  genreId String @map("_genreId") @db.ObjectId @unique
+  genre    Genre  @relation(fields: [genreId], references: [id])
+  user     User   @relation(fields: [userId], references: [id])
 }
 
 enum OrderStatus {

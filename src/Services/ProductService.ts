@@ -42,10 +42,10 @@ class ProductService {
           sale: true,
         },
         where: {
-          is_selling: this.IS_SELLING,
+          isSelling: this.IS_SELLING,
           publisher: {
             id: {
-              in: publisherId ? publisherId.map((publisher) => +publisher) : [],
+              in: publisherId ? publisherId.map((publisher) => publisher) : [],
             },
           },
           quantity: {
@@ -58,14 +58,14 @@ class ProductService {
             gte: priceLb ? +priceLb : undefined,
             lte: priceUb ? +priceUb : undefined,
           },
-          publishing_date: {
+          publishingDate: {
             gte: publishedDateLb ? new Date(publishedDateLb) : undefined,
             lte: publishedDateUb ? new Date(publishedDateUb) : undefined,
           },
           genre: {
             every: {
-              genre_id: {
-                in: genreId ? genreId.map((genre) => +genre) : [],
+              genreId: {
+                in: genreId ? genreId.map((genre) => genre) : [],
               },
             },
           },
@@ -94,7 +94,7 @@ class ProductService {
     try {
       const product = await database.product.findUniqueOrThrow({
         where: {
-          id: +id,
+          id: id,
         },
         include: {
           publisher: true,
@@ -111,7 +111,7 @@ class ProductService {
       });
       const avgRating = await database.review.aggregate({
         where: {
-          id: +id,
+          id: id,
         },
         _avg: {
           rating: true,
@@ -131,7 +131,7 @@ class ProductService {
           {
             ...product,
             avgRating: avgRating._avg.rating || 0,
-            similiarProducts: await this.mostSimiliarProducts(+id),
+            similiarProducts: await this.mostSimiliarProducts(id),
           },
           { excludeExtraneousValues: true }
         ),
@@ -142,29 +142,27 @@ class ProductService {
     }
   }
   private async getBestRated() {
-    const bestRatedProducts = await database.$queryRaw<
-      Product[]
-    >(Prisma.sql`SELECT product.id
-FROM product 
-LEFT JOIN review ON review.product_id = product.id
-LEFT JOIN productimages ON productimages.product_id = product.id
-WHERE product.is_selling = TRUE AND product.quantity > 0
-GROUP BY product.id
-order BY AVG(review.rating) DESC
-LIMIT 10`);
-    const bestRatedId: number[] = bestRatedProducts.map((product) => {
-      return product.id;
-    });
-    return await database.product.findMany({
-      include: {
-        productImages: true,
-        sale: true,
-      },
+    const bestRatedProducts = await database.product.findMany({
       where: {
-        id: {
-          in: bestRatedId,
+        isSelling: true,
+        quantity: { gt: 0 },
+      },
+      select: {
+        id: true,
+        reviews: {
+          select: {
+            rating: true,
+          },
         },
       },
+      orderBy: {
+        reviews: {
+          avg: {
+            rating: true,
+          },
+        },
+      },
+      take: 10,
     });
   }
   private async getNewestProducts() {
@@ -175,13 +173,13 @@ LIMIT 10`);
         sale: true,
       },
       where: {
-        is_selling: true,
+        isSelling: true,
         quantity: {
           gte: 0,
         },
       },
       orderBy: {
-        publishing_date: "desc",
+        publishingDate: "desc",
       },
     });
     return newestProducts;
@@ -198,101 +196,81 @@ LIMIT 10`);
       }),
     });
   }
-  async getUsersThatHaveBoughtProduct(product_id: number) {
-    return await database.$queryRaw<Array<{ id: number }>>`SELECT 
-    user.id
-FROM
-    user
-        INNER JOIN
-    cart ON cart.user_id = user.id
-        INNER JOIN
-    cartitem ON cartitem.cart_id = cart.id
-		INNER JOIN
-	\`order\` ON \`order\`.cart_id = cart.id
-WHERE
-    cartitem.product_id = ${product_id} AND cart.status = "ISSUED_ORDER" AND \`order\`.order_status = "DELIVERED"
-GROUP BY user.id`;
-  }
-  async mostSimiliarProducts(product_id: number) {
-    const usersThatHaveBoughtProduct = await this.getUsersThatHaveBoughtProduct(
-      product_id
-    );
-
-    const relatedItems = await database.cartItem.groupBy({
-      by: ["product_id"],
+  async getUsersThatHaveBoughtProduct(productId: string) {
+    const cartItems = await database.cartItem.findMany({
       where: {
-        product_id: {
-          not: product_id,
-        },
-        cart: {
-          user_id: {
-            in: usersThatHaveBoughtProduct.map((user) => user.id),
-          },
-          status: "ISSUED_ORDER",
-          order: {
-            some: { order_status: "DELIVERED" },
-          },
-        },
+        productId: productId,
       },
-      orderBy: {
-        _sum: {
-          quantity: "desc",
+    });
+
+    // Get all carts that contain these items and have status "ISSUED_ORDER"
+    const carts = await database.cart.findMany({
+      where: {
+        id: {
+          in: cartItems.map((item) => item.cartId),
+        },
+        status: "ISSUED_ORDER",
+      },
+    });
+
+    // Get all orders that are linked to these carts and have status "DELIVERED"
+    const orders = await database.order.findMany({
+      where: {
+        cartId: {
+          in: carts.map((cart) => cart.id),
+        },
+        orderStatus: "DELIVERED",
+      },
+    });
+
+    // Get all users that are linked to these orders
+    const users = await database.user.findMany({
+      where: {
+        id: {
+          in: orders.map((order) => order.user),
         },
       },
     });
-    if (relatedItems.length >= 5) {
-      const items = relatedItems.slice(0, 5);
-      return await database.product.findMany({
-        include: {
-          productImages: true,
-          sale: true,
-        },
-        where: {
-          id: {
-            in: items.map((item) => item.product_id),
-          },
-        },
-      });
-    } else {
-      const related = relatedItems.map((item) => item.product_id);
-      const items = await database.product.findMany({
-        include: {
-          productImages: true,
-          sale: true,
-        },
-        where: {
-          id: {
-            in: related,
-          },
-        },
-      });
-      return items.concat(
-        await database.product.findMany({
-          take: 5 - items.length,
-          include: {
-            sale: true,
-            productImages: true,
-          },
-          where: {
-            id: {
-              notIn: [...related, product_id],
+
+    return users;
+  }
+  async mostSimiliarProducts(productId: string) {
+    const usersThatHaveBoughtProduct = await this.getUsersThatHaveBoughtProduct(
+      productId
+    );
+
+    const relatedItems = await database.cartItem.groupBy({
+      by: ["productId"],
+      where: {
+        AND: [
+          { productId: { not: productId } },
+          {
+            cart: {
+              userId: {
+                in: usersThatHaveBoughtProduct.map((user) => user.id),
+              },
             },
           },
-        })
-      );
-    }
+        ],
+      },
+      _count: true,
+      orderBy: { _count: { productId: "desc" } },
+      take: 10,
+    });
+
+    return relatedItems;
   }
   async getFilterOptions(req: Request, res: Response) {
     const productInfo = await database.product.aggregate({
       _min: {
         price: true,
-        publishing_date: true,
-        page_number: true,
+        publishingDate: true,
+        pageNumber: true,
       },
       _max: {
         price: true,
-        publishing_date: true,
-        page_number: true,
+        publishingDate: true,
+        pageNumber: true,
       },
     });
     const genres = await database.genre.findMany();

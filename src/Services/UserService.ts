@@ -13,19 +13,19 @@ class UserService {
     return false;
   }
   async getUserProfile(req: Request, res: Response) {
-    const user = req.user as number;
+    const user = req.user;
     const userProfile = await database.user.findUnique({
       where: {
         id: user,
       },
       include: {
-        prefferences: {
+        preferences: {
           select: {
             genre: true,
           },
         },
         cart: {
-          select: { order: { where: { order_status: "DELIVERED" } } },
+          select: { orders: { where: { orderStatus: "DELIVERED" } } },
           where: {
             status: "ISSUED_ORDER",
           },
@@ -35,12 +35,12 @@ class UserService {
     return res.json(userProfile);
   }
   async addFavourite(req: Request, res: Response) {
-    const user = req.user as number;
-    const { product_id } = req.body;
+    const user = req.user!;
+    const { productId } = req.body;
     try {
       const favouriteCount = await database.favourites.count({
         where: {
-          user_id: user,
+          userId: user,
         },
       });
       if (favouriteCount >= 10)
@@ -49,8 +49,8 @@ class UserService {
           .send({ error: "You can have up to 10 favourite products" });
       await database.favourites.create({
         data: {
-          product_id: product_id as number,
-          user_id: user,
+          productId: productId,
+          userId: user,
         },
       });
       await this.getUserFavourites(req, res);
@@ -59,37 +59,37 @@ class UserService {
     }
   }
   async setPrefferences(req: Request, res: Response) {
-    const { genre_id } = req.body;
-    const genre = await database.genre.findFirst({ where: { id: genre_id } });
+    const { genreId } = req.body;
+    const genre = await database.genre.findFirst({ where: { id: genreId } });
     if (!genre) return res.status(400).send();
     const userPref = await database.userPreferences.findFirst({
-      where: { user_id: req.user },
+      where: { userId: req.user },
     });
     if (userPref) {
       await database.userPreferences.update({
         where: {
           id: userPref.id,
         },
-        data: { genre_id },
+        data: { genreId },
       });
     } else {
       await database.userPreferences.create({
         data: {
-          user_id: req.user!,
-          genre_id,
+          userId: req.user!,
+          genreId,
         },
       });
     }
     return res.status(201).send();
   }
   async removeFavourite(req: Request, res: Response) {
-    const user = req.user as number;
-    const { product_id } = req.body;
+    const user = req.user;
+    const { productId } = req.body;
     try {
       await database.favourites.deleteMany({
         where: {
-          product_id,
-          user_id: user,
+          productId,
+          userId: user,
         },
       });
       await this.getUserFavourites(req, res);
@@ -103,7 +103,7 @@ class UserService {
       where: {
         favourites: {
           some: {
-            user_id: {
+            userId: {
               equals: user,
             },
           },
@@ -119,12 +119,12 @@ class UserService {
     const orders = await database.order.findMany({
       where: {
         cart: {
-          user_id: user,
+          userId: user,
         },
       },
       select: {
-        order_status: true,
-        ordered_at: true,
+        orderStatus: true,
+        orderedAt: true,
         id: true,
         orderReview: true,
         cart: {

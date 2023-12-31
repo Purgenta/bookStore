@@ -3,7 +3,7 @@ import Validation from "../Core/Validation.js";
 
 class CartValidation extends Validation {
   setProductId() {
-    this.chain.push(body("product_id").isInt());
+    this.chain.push(body("product_id").isString());
     return this;
   }
   setQuantity() {

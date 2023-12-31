@@ -9,9 +9,9 @@ dotenv.config();
 type UserDetails = {
   email: string;
   name: string;
-  last_name: string;
+  lastName: string;
   password: string;
-  phone_number: string;
+  phoneNumber: string;
   adress: string;
 };
 export type UserLogin = Omit<
@@ -92,8 +92,8 @@ class AuthService {
     );
     await database.refreshToken.create({
       data: {
-        refresh_token,
-        user_id: user.id,
+        refreshToken: refresh_token,
+        userId: user.id,
       },
     });
     res.cookie("refresh_token", refresh_token, {
@@ -105,7 +105,7 @@ class AuthService {
     res.status(200).json({ accessToken, role: user.role });
   }
   public async issueAccessToken(req: Request, res: Response) {
-    const user_id = req.user as number;
+    const user_id = req.user;
     const accessToken = jwt.sign(
       { user_id },
       `${process.env.ACCESS_TOKEN_SECRET_KEY}`,
@@ -134,10 +134,10 @@ class AuthService {
           id: user,
         },
         data: {
-          adress,
+          address: adress,
           name,
-          last_name,
-          phone_number,
+          lastName: last_name,
+          phoneNumber: phone_number,
         },
       });
     } else {
@@ -152,8 +152,8 @@ class AuthService {
         data: {
           email,
           name,
-          last_name,
-          phone_number,
+          lastName: last_name,
+          phoneNumber: phone_number,
         },
       });
     }
