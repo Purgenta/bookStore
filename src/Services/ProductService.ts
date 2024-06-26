@@ -1,7 +1,5 @@
 import database from "../Database/database.js";
 import { Request, Response } from "express";
-import { Prisma } from "@prisma/client";
-import { Product } from "@prisma/client";
 import { plainToClass } from "class-transformer";
 import { ProductDTO } from "../Models/ProductDTO.js";
 import ReviewService from "./ReviewService.js";
@@ -42,7 +40,7 @@ class ProductService {
           sale: true,
         },
         where: {
-          isSelling: this.IS_SELLING,
+          is_selling: this.IS_SELLING,
           publisher: {
             id: {
               in: publisherId ? publisherId.map((publisher) => publisher) : [],
@@ -58,13 +56,13 @@ class ProductService {
             gte: priceLb ? +priceLb : undefined,
             lte: priceUb ? +priceUb : undefined,
           },
-          publishingDate: {
+          publishing_date: {
             gte: publishedDateLb ? new Date(publishedDateLb) : undefined,
             lte: publishedDateUb ? new Date(publishedDateUb) : undefined,
           },
           genre: {
             every: {
-              genreId: {
+              genre_id: {
                 in: genreId ? genreId.map((genre) => genre) : [],
               },
             },
@@ -144,7 +142,7 @@ class ProductService {
   private async getBestRated() {
     const bestRatedProducts = await database.product.findMany({
       where: {
-        isSelling: true,
+        is_selling: true,
         quantity: { gt: 0 },
       },
       select: {
@@ -156,11 +154,7 @@ class ProductService {
         },
       },
       orderBy: {
-        reviews: {
-          avg: {
-            rating: true,
-          },
-        },
+        reviews: {},
       },
       take: 10,
     });
@@ -173,13 +167,13 @@ class ProductService {
         sale: true,
       },
       where: {
-        isSelling: true,
+        is_selling: true,
         quantity: {
           gte: 0,
         },
       },
       orderBy: {
-        publishingDate: "desc",
+        publishing_date: "desc",
       },
     });
     return newestProducts;
@@ -199,7 +193,7 @@ class ProductService {
   async getUsersThatHaveBoughtProduct(productId: string) {
     const cartItems = await database.cartItem.findMany({
       where: {
-        productId: productId,
+        product_id: productId,
       },
     });
 
@@ -207,7 +201,7 @@ class ProductService {
     const carts = await database.cart.findMany({
       where: {
         id: {
-          in: cartItems.map((item) => item.cartId),
+          in: cartItems.map((item) => item.cart_id),
         },
         status: "ISSUED_ORDER",
       },
@@ -227,7 +221,7 @@ class ProductService {
     const users = await database.user.findMany({
       where: {
         id: {
-          in: orders.map((order) => order.user),
+          in: orders.map((order) => order.id),
         },
       },
     });
@@ -240,13 +234,13 @@ class ProductService {
     );
 
     const relatedItems = await database.cartItem.groupBy({
-      by: ["productId"],
+      by: ["product_id"],
       where: {
         AND: [
-          { productId: { not: productId } },
+          { product_id: { not: productId } },
           {
             cart: {
-              userId: {
+              user_id: {
                 in: usersThatHaveBoughtProduct.map((user) => user.id),
               },
             },
@@ -254,7 +248,7 @@ class ProductService {
         ],
       },
       _count: true,
-      orderBy: { _count: { productId: "desc" } },
+      orderBy: { _count: { product_id: "desc" } },
       take: 10,
     });
 
@@ -264,18 +258,55 @@ class ProductService {
     const productInfo = await database.product.aggregate({
       _min: {
         price: true,
-        publishingDate: true,
-        pageNumber: true,
+        publishing_date: true,
+        page_number: true,
       },
       _max: {
         price: true,
-        publishingDate: true,
-        pageNumber: true,
+        publishing_date: true,
+        page_number: true,
       },
     });
     const genres = await database.genre.findMany();
     const publishers = await database.publisher.findMany();
     res.json({ productInfo, genres, publishers });
+  }
+  async createProduct(req: Request, res: Response) {
+    const {
+      title,
+      description,
+      price,
+      quantity,
+      publishing_date,
+      genre,
+      author,
+      publisher,
+      page_number,
+      productType,
+    } = req.body;
+    await database.product.create({
+      data: {
+        title,
+        page_number,
+        author: {
+          connect: author,
+        },
+        publisher: {
+          connect: publisher,
+        },
+        productType: {
+          connect: productType,
+        },
+
+        description,
+        price,
+        quantity,
+        publishing_date,
+        genre: {
+          connect: genre,
+        },
+      },
+    });
   }
 }
 export default ProductService;

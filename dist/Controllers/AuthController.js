@@ -1,9 +1,8 @@
 import Controller from "../Core/Controller.js";
 import express from "express";
 import AuthService from "../Services/AuthService.js";
-import { refreshTokenMiddleware } from "../Middlewares/AuthenticationMiddleware.js";
+import authenticatedMiddleWare, { refreshTokenMiddleware, } from "../Middlewares/AuthenticationMiddleware.js";
 import { UserValidation } from "../Validation/UserValidation.js";
-import { validationResult } from "express-validator";
 class AuthController extends Controller {
     constructor() {
         super();
@@ -11,45 +10,72 @@ class AuthController extends Controller {
     }
     setRouter() {
         const router = express.Router();
-        const validateUserDetails = new UserValidation()
-            .setEmail()
-            .setPassword()
-            .setName()
-            .setLastName()
-            .getValidation();
-        const validateUserLogin = new UserValidation()
-            .setEmail()
-            .setPassword()
-            .getValidation();
-        router.route("/register").post(validateUserDetails, this.register());
-        router.route("/refreshToken").get(refreshTokenMiddleware, this.accessToken);
-        router.route("/login").post(validateUserLogin, this.login());
+        router.route("/register").post(...this.register());
+        router.route("/refreshToken").get(...this.accessToken());
+        router.route("/login").post(...this.login());
+        router.use(authenticatedMiddleWare);
+        router.route("/updateInformation").put(...this.updateInformation());
+        router.route("/updateCredentials").put(...this.updateCredentials());
+        router.route("/logout").get(this.logout());
         return router;
     }
     register() {
-        return (req, res, next) => {
-            const errors = validationResult(req);
-            if (!errors.isEmpty) {
-                res.status(400).json({ errors: errors.array() });
-            }
-            const { email, name, lastName, password, phoneNumber } = req.body;
-            this.authService.register(req, res, next, {
-                email,
-                name,
-                lastName,
-                password,
-                phoneNumber,
-            });
-        };
+        const validateUserDetails = new UserValidation()
+            .setEmail()
+            .setPassword("password")
+            .setName()
+            .setLastName()
+            .setNumber()
+            .getValidation();
+        return [
+            validateUserDetails,
+            this.mapErrors,
+            this.authService.register.bind(this.authService),
+        ];
     }
     login() {
-        return (req, res, next) => {
-            const { email, password } = req.body;
-            this.authService.login(req, res, next, { email, password });
-        };
+        const validateUserLogin = new UserValidation()
+            .setEmail()
+            .setPassword("password")
+            .getValidation();
+        return [
+            validateUserLogin,
+            this.mapErrors,
+            this.authService.login.bind(this.authService),
+        ];
     }
-    accessToken(req, res) {
-        this.authService.issueAccessToken(req, res);
+    accessToken() {
+        return [
+            refreshTokenMiddleware,
+            this.authService.issueAccessToken.bind(this.authService),
+        ];
+    }
+    updateInformation() {
+        const validateInformation = new UserValidation()
+            .setEmail()
+            .setName()
+            .setLastName()
+            .setNumber()
+            .getValidation();
+        return [
+            validateInformation,
+            this.mapErrors,
+            this.authService.changeUserInformation.bind(this.authService),
+        ];
+    }
+    updateCredentials() {
+        const validateCredentials = new UserValidation()
+            .setPassword("currentPassword")
+            .setPassword("newPassword")
+            .getValidation();
+        return [
+            validateCredentials,
+            this.mapErrors,
+            this.authService.updateCredentials.bind(this.authService),
+        ];
+    }
+    logout() {
+        return this.authService.logout.bind(this.authService);
     }
 }
 export default AuthController;

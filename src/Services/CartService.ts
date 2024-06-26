@@ -12,7 +12,7 @@ class CartService {
           where: {
             cart: {
               status: "ONGOING",
-              userId: req.user,
+              user_id: req.user,
             },
           },
         },
@@ -23,7 +23,7 @@ class CartService {
         cartItem: {
           some: {
             cart: {
-              userId: req.user,
+              user_id: req.user,
               status: "ONGOING",
             },
           },
@@ -36,13 +36,13 @@ class CartService {
     let userCart = await database.cart.findFirst({
       where: {
         status: "ONGOING",
-        userId: user,
+        user_id: user,
       },
     });
     if (!userCart) {
       userCart = await database.cart.create({
         data: {
-          userId: user,
+          user_id: user,
         },
       });
     }
@@ -51,8 +51,8 @@ class CartService {
   private async findCartItem(cartId: string, productId: string) {
     const cartItem = await database.cartItem.findFirst({
       where: {
-        cartId,
-        productId,
+        cart_id: cartId,
+        product_id: productId,
       },
     });
     return cartItem;
@@ -61,7 +61,7 @@ class CartService {
     const product = await database.product.findFirst({
       where: {
         id: product_id,
-        isSelling: true,
+        is_selling: true,
         quantity: {
           gt: quantity,
         },
@@ -76,9 +76,9 @@ class CartService {
   ) {
     return await database.cartItem.create({
       data: {
-        productId,
-        cartId,
-        quantity,
+        product_id: productId,
+        cart_id: cartId,
+        quantity: quantity,
       },
     });
   }
@@ -122,9 +122,9 @@ class CartService {
         where: {
           cart: {
             status: "ONGOING",
-            userId: req.user,
+            user_id: req.user,
           },
-          productId: product_id,
+          product_id: product_id,
         },
       });
       if (!cartItem) throw new Error("Item isn't inside of your cart");
@@ -153,7 +153,7 @@ class CartService {
       const cartItem = await this.findCartItem(userCart.id, productId);
       if (!cartItem) {
         await database.cartItem.create({
-          data: { quantity, productId, cartId: userCart.id },
+          data: { quantity, product_id: productId, cart_id: userCart.id },
         });
       } else
         await database.cartItem.update({
@@ -170,7 +170,7 @@ class CartService {
   public async checkout(req: Request, res: Response) {
     const { user } = req;
     const cart = await database.cart.findFirst({
-      where: { userId: user, status: "ONGOING" },
+      where: { user_id: user, status: "ONGOING" },
       select: { cartItems: true, id: true },
     });
     if (!cart || !cart.cartItems.length) res.status(400).send();

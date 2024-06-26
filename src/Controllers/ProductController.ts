@@ -36,5 +36,8 @@ class ProductController extends Controller {
   private getGenres() {
     return this.genreService.getAllGenres.bind(this.genreService);
   }
+  private createProduct() {
+    return this.productService.createProduct.bind(this.productService);
+  }
 }
 export default ProductController;

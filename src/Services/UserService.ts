@@ -40,7 +40,7 @@ class UserService {
     try {
       const favouriteCount = await database.favourites.count({
         where: {
-          userId: user,
+          user_id: user,
         },
       });
       if (favouriteCount >= 10)
@@ -49,8 +49,8 @@ class UserService {
           .send({ error: "You can have up to 10 favourite products" });
       await database.favourites.create({
         data: {
-          productId: productId,
-          userId: user,
+          product_id: productId,
+          user_id: user,
         },
       });
       await this.getUserFavourites(req, res);
@@ -63,20 +63,20 @@ class UserService {
     const genre = await database.genre.findFirst({ where: { id: genreId } });
     if (!genre) return res.status(400).send();
     const userPref = await database.userPreferences.findFirst({
-      where: { userId: req.user },
+      where: { user_id: req.user },
     });
     if (userPref) {
       await database.userPreferences.update({
         where: {
           id: userPref.id,
         },
-        data: { genreId },
+        data: { genre_id: genreId },
       });
     } else {
       await database.userPreferences.create({
         data: {
-          userId: req.user!,
-          genreId,
+          user_id: req.user!,
+          genre_id: genreId,
         },
       });
     }
@@ -88,8 +88,8 @@ class UserService {
     try {
       await database.favourites.deleteMany({
         where: {
-          productId,
-          userId: user,
+          product_id: productId,
+          user_id: user,
         },
       });
       await this.getUserFavourites(req, res);
@@ -103,7 +103,7 @@ class UserService {
       where: {
         favourites: {
           some: {
-            userId: {
+            user_id: {
               equals: user,
             },
           },
@@ -119,7 +119,7 @@ class UserService {
     const orders = await database.order.findMany({
       where: {
         cart: {
-          userId: user,
+          user_id: user,
         },
       },
       select: {

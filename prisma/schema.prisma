@@ -11,9 +11,9 @@ model User {
   id           String          @id @default(auto()) @map("_id") @db.ObjectId
   email        String          @unique
   name         String
-  lastName     String
-  phoneNumber  String
-  createdAt    DateTime        @default(now())
+  last_name     String
+  phone_number  String
+  created_at    DateTime        @default(now())
   password     String
   role         Role            @default(USER)
   refreshToken RefreshToken[]
@@ -27,23 +27,23 @@ model User {
 
 model Product {
   id             String         @id @default(auto()) @map("_id") @db.ObjectId
-  pageNumber     Int
+  page_number     Int
   title          String
-  publishingDate DateTime
-  isSelling      Boolean        @default(true)
+  publishing_date DateTime
+  is_selling      Boolean        @default(true)
   price          Float
-  typeId         String
+  typeId         String @db.ObjectId  
   quantity       Int
-  publisherId    String
+  publisher_id    String @db.ObjectId
   description    String
-  authorId       String
-  author         Author         @relation(fields: [authorId], references: [id])
+  author_id       String @db.ObjectId
+  author         Author         @relation(fields: [author_id], references: [id])
   cartItem       CartItem[]
   genre          ProductGenre[]
   reviews        Review[]
   favourites     Favourites[]
   productImages  ProductImage[]
-  publisher      Publisher      @relation(fields: [publisherId], references: [id])
+  publisher      Publisher      @relation(fields: [publisher_id], references: [id])
   productType    ProductType    @relation(fields: [typeId], references: [id])
   sale           Sale?
 }
@@ -51,7 +51,7 @@ model Product {
 model Author {
   id      String   @id @default(auto()) @map("_id") @db.ObjectId
   name    String
-  lastName String
+  last_name String
   product Product[]
 }
 
@@ -64,10 +64,10 @@ model Genre {
 
 model ProductGenre {
   id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  productId String  @map("_productId") @db.ObjectId
-  genreId   String  @map("_genreId") @db.ObjectId
-  product   Product @relation(fields: [productId], references: [id])
-  genre     Genre   @relation(fields: [genreId], references: [id])
+  product_id String  @map("_productId") @db.ObjectId
+  genre_id   String  @map("_genreId") @db.ObjectId
+  product   Product @relation(fields: [product_id], references: [id])
+  genre     Genre   @relation(fields: [genre_id], references: [id])
 
 }
 
@@ -83,17 +83,17 @@ enum CartStatus {
 }
 
 model Review {
-   id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
   comment    String  
   rating     Float
-  userId    String  @map("_userId") @db.ObjectId
-  productId String  @map("_productId") @db.ObjectId
-  user       User    @relation(fields: [userId], references: [id])
-  product    Product @relation(fields: [productId], references: [id])
+  user_id    String  @map("_userId") @db.ObjectId
+  product_id String  @map("_productId") @db.ObjectId
+  user       User    @relation(fields: [user_id], references: [id])
+  product    Product @relation(fields: [product_id], references: [id])
 }
 
 model Publisher {
-   id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
   name    String    @unique
   product Product[]
 }
@@ -103,7 +103,7 @@ model Order {
   orderStatus OrderStatus @default(ONGOING)
   orderedAt   DateTime    @default(now())
   orderReview OrderReview?
-  cartId     String      @map("_cartId") @db.ObjectId
+  cartId      String      @map("_cartId") @db.ObjectId
   cart         Cart        @relation(fields: [cartId], references: [id])
 }
 
@@ -115,8 +115,8 @@ model ProductType {
 
 model Cart {
   id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String  @map("_userId") @db.ObjectId
-  user       User       @relation(fields: [userId], references: [id])
+  user_id    String  @map("_userId") @db.ObjectId
+  user       User       @relation(fields: [user_id], references: [id])
   cartItems  CartItem[]
   orders     Order[]
   status     CartStatus @default(ONGOING)
@@ -124,58 +124,58 @@ model Cart {
 
 model Favourites {
   id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String  @map("_userId") @db.ObjectId
-  productId String  @map("_productId") @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id])
-  product   Product  @relation(fields: [productId], references: [id])
+  user_id    String  @map("_userId") @db.ObjectId
+  product_id String  @map("_productId") @db.ObjectId
+  user      User     @relation(fields: [user_id], references: [id])
+  product   Product  @relation(fields: [product_id], references: [id])
 }
 
 model CartItem {
   id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  productId String  @map("_productId") @db.ObjectId
-  cartId    String  @map("_cartId") @db.ObjectId
+  product_id String  @map("_productId") @db.ObjectId
+  cart_id    String  @map("_cartId") @db.ObjectId
   quantity   Int
-  product    Product @relation(fields: [productId], references: [id])
-  cart       Cart    @relation(fields: [cartId], references: [id])
+  product    Product @relation(fields: [product_id], references: [id])
+  cart       Cart    @relation(fields: [cart_id], references: [id])
 }
 
 model RefreshToken {
   id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  refreshToken String
-  user         User   @relation(fields: [userId], references: [id])
-  userId      String @map("_userId") @db.ObjectId
+  refresh_token String
+  user         User   @relation(fields: [user_id], references: [id])
+  user_id      String @map("_userId") @db.ObjectId
 }
 
 model ProductImage {
   id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  productId String  @map("_productId") @db.ObjectId
-  imageUrl  String
-  product    Product @relation(fields: [productId], references: [id])
+  product_id String  @map("_productId") @db.ObjectId
+  image_url  String
+  product    Product @relation(fields: [product_id], references: [id])
 }
 
 model Sale {
   id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  productId String  @map("_productId") @db.ObjectId @unique
+  product_id String  @map("_productId") @db.ObjectId @unique
   discount  Int
-  product   Product? @relation(fields: [productId], references: [id])
+  product   Product? @relation(fields: [product_id], references: [id])
 }
 
 model OrderReview{
   id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String  @map("_userId") @db.ObjectId
-  orderId   String  @map("_orderId") @db.ObjectId @unique
-  user    User    @relation(fields: [userId], references: [id])
-  order   Order   @relation(fields: [orderId], references: [id])
+  user_id    String  @map("_userId") @db.ObjectId
+  order_id   String  @map("_orderId") @db.ObjectId @unique
+  user    User    @relation(fields: [user_id], references: [id])
+  order   Order   @relation(fields: [order_id], references: [id])
   comment String  
   rating  Int
 }
 
 model UserPreferences {
   id       String @id @default(auto()) @map("_id") @db.ObjectId
-  userId  String @map("_userId") @db.ObjectId @unique
-  genreId String @map("_genreId") @db.ObjectId @unique
-  genre    Genre  @relation(fields: [genreId], references: [id])
-  user     User   @relation(fields: [userId], references: [id])
+  user_id  String @map("_userId") @db.ObjectId @unique
+  genre_id String @map("_genreId") @db.ObjectId @unique
+  genre    Genre  @relation(fields: [genre_id], references: [id])
+  user     User   @relation(fields: [user_id], references: [id])
 }
 
 enum OrderStatus {

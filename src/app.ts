@@ -7,10 +7,12 @@ import UserController from "./Controllers/UserController.js";
 import CartController from "./Controllers/CartController.js";
 import ReviewController from "./Controllers/ReviewController.js";
 import OrderController from "./Controllers/OrderController.js";
+import { GenreController } from "./Controllers/GenreController.js";
 class App {
   private app: express.Application;
   private authController: AuthController;
   private productController: ProductController;
+  private genreController: GenreController;
   private userController: UserController;
   private cartController: CartController;
   private reviewController: ReviewController;
@@ -18,6 +20,7 @@ class App {
   constructor() {
     this.app = express();
     this.authController = new AuthController();
+    this.genreController = new GenreController();
     this.productController = new ProductController();
     this.orderController = new OrderController();
     this.userController = new UserController();
@@ -44,6 +47,7 @@ class App {
     this.app.use("/cart", this.cartController.setRouter());
     this.app.use("/review", this.reviewController.setRouter());
     this.app.use("/order", this.orderController.setRouter());
+    this.app.use("/genre", this.genreController.setRouter());
     this.app.use("/", (req, res) => {
       res.status(404).send();
     });

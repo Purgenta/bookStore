@@ -9,9 +9,9 @@ dotenv.config();
 type UserDetails = {
   email: string;
   name: string;
-  lastName: string;
+  last_name: string;
   password: string;
-  phoneNumber: string;
+  phone_number: string;
   adress: string;
 };
 export type UserLogin = Omit<
@@ -19,7 +19,7 @@ export type UserLogin = Omit<
   "name" | "last_name" | "phone_number" | "adress"
 >;
 export type JwtPayload = {
-  user_id: number;
+  user_id: string;
   role: Role;
 };
 class AuthService {
@@ -28,10 +28,9 @@ class AuthService {
     this.userService = new UserService();
   }
   public async register(req: Request, res: Response, next: NextFunction) {
-    const userDetails = req.body as UserDetails;
-    const userExists = await this.userService.checkIfUserExists(
-      userDetails.email
-    );
+    const { adress, email, last_name, name, password, phone_number } =
+      req.body as UserDetails;
+    const userExists = await this.userService.checkIfUserExists(email);
     if (userExists) {
       res.status(400).json({
         errors: {
@@ -42,11 +41,15 @@ class AuthService {
       });
       return;
     }
-    const hashedPassword = await bcryptjs.hash(userDetails.password, 12);
-    userDetails.password = hashedPassword;
+    const hashedPassword = await bcryptjs.hash(password, 12);
     await database.user.create({
       data: {
-        ...userDetails,
+        password: hashedPassword,
+        email: email,
+        last_name,
+        name,
+        phone_number,
+        address: adress,
       },
     });
     res.status(201).send();
@@ -92,8 +95,8 @@ class AuthService {
     );
     await database.refreshToken.create({
       data: {
-        refreshToken: refresh_token,
-        userId: user.id,
+        refresh_token,
+        user_id: user.id,
       },
     });
     res.cookie("refresh_token", refresh_token, {
@@ -136,8 +139,8 @@ class AuthService {
         data: {
           address: adress,
           name,
-          lastName: last_name,
-          phoneNumber: phone_number,
+          last_name: last_name,
+          phone_number: phone_number,
         },
       });
     } else {
@@ -152,8 +155,8 @@ class AuthService {
         data: {
           email,
           name,
-          lastName: last_name,
-          phoneNumber: phone_number,
+          last_name: last_name,
+          phone_number: phone_number,
         },
       });
     }

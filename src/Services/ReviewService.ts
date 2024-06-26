@@ -42,10 +42,10 @@ class ReviewService {
         .send();
     const review = await database.review.create({
       data: {
-        productId: product_id,
+        product_id: product_id,
         rating,
         comment,
-        userId: req.user!,
+        user_id: req.user!,
       },
     });
     res.json(review).send();
@@ -67,13 +67,13 @@ class ReviewService {
         skip,
         take: limitDefault,
         where: {
-          productId: id,
+          product_id: id,
         },
         include: {
           user: {
             select: {
               name: true,
-              lastName: true,
+              last_name: true,
             },
           },
         },
@@ -92,7 +92,7 @@ class ReviewService {
     try {
       const reviewCount = await database.review.count({
         where: {
-          productId: product_id,
+          product_id: product_id,
         },
       });
       return reviewCount;
