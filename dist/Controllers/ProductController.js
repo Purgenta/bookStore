@@ -16,6 +16,7 @@ class ProductController extends Controller {
         router.get("/showcasedProducts", this.getShowcasedProducts());
         router.get("/genres", this.getGenres());
         router.get("/:id", authenticatedOrAnonymous, this.getProductById());
+        router.post("/createProduct", this.createProduct());
         return router;
     }
     getFilteredProducts() {
@@ -32,6 +33,9 @@ class ProductController extends Controller {
     }
     getGenres() {
         return this.genreService.getAllGenres.bind(this.genreService);
+    }
+    createProduct() {
+        return this.productService.createProduct.bind(this.productService);
     }
 }
 export default ProductController;

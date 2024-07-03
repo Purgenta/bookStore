@@ -40,8 +40,8 @@ class ProductService {
                         contains: q ? `${q}` : undefined,
                     },
                     price: {
-                        gte: priceLb ? +priceLb : undefined,
-                        lte: priceUb ? +priceUb : undefined,
+                        gte: priceLb ? priceLb : undefined,
+                        lte: priceUb ? priceUb : undefined,
                     },
                     publishing_date: {
                         gte: publishedDateLb ? new Date(publishedDateLb) : undefined,
@@ -60,7 +60,8 @@ class ProductService {
                 },
             };
             const products = await database.product.findMany(filter);
-            const totalPages = (await database.product.count()) / itemLimit;
+            const totalPages = (await database.product.count({ where: { ...filter.where } })) /
+                itemLimit;
             res
                 .json({
                 products: plainToClass(ProductDTO, products, {
@@ -125,19 +126,13 @@ class ProductService {
                 is_selling: true,
                 quantity: { gt: 0 },
             },
-            select: {
-                id: true,
-                reviews: {
-                    select: {
-                        rating: true,
-                    },
-                },
-            },
-            orderBy: {
-                reviews: {},
+            include: {
+                productImages: true,
+                sale: true,
             },
             take: 10,
         });
+        return bestRatedProducts;
     }
     async getNewestProducts() {
         const newestProducts = await database.product.findMany({
@@ -242,6 +237,34 @@ class ProductService {
         const genres = await database.genre.findMany();
         const publishers = await database.publisher.findMany();
         res.json({ productInfo, genres, publishers });
+    }
+    async createProduct(req, res) {
+        const { title, description, price, quantity, publishing_date, genre, author, publisher, page_number, productType, } = req.body;
+        await database.product.create({
+            data: {
+                title,
+                page_number,
+                author: {
+                    connect: {
+                        id: author,
+                    },
+                },
+                publisher: {
+                    connect: {
+                        id: publisher,
+                    },
+                },
+                productType: {
+                    connect: {
+                        id: productType,
+                    },
+                },
+                description,
+                price,
+                quantity,
+                publishing_date: new Date(publishing_date),
+            },
+        });
     }
 }
 export default ProductService;

@@ -47,11 +47,11 @@ class CartService {
         }
         return userCart;
     }
-    async findCartItem(cartId, productId) {
+    async findCartItem(cartId, product_id) {
         const cartItem = await database.cartItem.findFirst({
             where: {
                 cart_id: cartId,
-                product_id: productId,
+                product_id: product_id,
             },
         });
         return cartItem;
@@ -68,10 +68,10 @@ class CartService {
         });
         return product;
     }
-    async createCartItem(cartId, productId, quantity) {
+    async createCartItem(cartId, product_id, quantity) {
         return await database.cartItem.create({
             data: {
-                product_id: productId,
+                product_id: product_id,
                 cart_id: cartId,
                 quantity: quantity,
             },
@@ -144,19 +144,19 @@ class CartService {
         }
     }
     async setCartItem(req, res) {
-        const { productId, quantity } = req.body;
+        const { product_id, quantity } = req.body;
         const { user } = req;
         const product = await database.product.findUnique({
-            where: { id: productId },
+            where: { id: product_id },
         });
         if (!product)
             return res.status(400).send();
         if (product.quantity >= quantity) {
             const userCart = await this.createOrFindUserCart(user);
-            const cartItem = await this.findCartItem(userCart.id, productId);
+            const cartItem = await this.findCartItem(userCart.id, product_id);
             if (!cartItem) {
                 await database.cartItem.create({
-                    data: { quantity, product_id: productId, cart_id: userCart.id },
+                    data: { quantity, product_id: product_id, cart_id: userCart.id },
                 });
             }
             else

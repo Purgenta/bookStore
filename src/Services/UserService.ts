@@ -36,7 +36,7 @@ class UserService {
   }
   async addFavourite(req: Request, res: Response) {
     const user = req.user!;
-    const { productId } = req.body;
+    const { product_id } = req.body;
     try {
       const favouriteCount = await database.favourites.count({
         where: {
@@ -49,7 +49,7 @@ class UserService {
           .send({ error: "You can have up to 10 favourite products" });
       await database.favourites.create({
         data: {
-          product_id: productId,
+          product_id: product_id,
           user_id: user,
         },
       });
@@ -59,8 +59,8 @@ class UserService {
     }
   }
   async setPrefferences(req: Request, res: Response) {
-    const { genreId } = req.body;
-    const genre = await database.genre.findFirst({ where: { id: genreId } });
+    const { genre_id } = req.body;
+    const genre = await database.genre.findFirst({ where: { id: genre_id } });
     if (!genre) return res.status(400).send();
     const userPref = await database.userPreferences.findFirst({
       where: { user_id: req.user },
@@ -70,13 +70,24 @@ class UserService {
         where: {
           id: userPref.id,
         },
-        data: { genre_id: genreId },
+        data: {
+          genre_id: genre_id,
+        },
       });
     } else {
       await database.userPreferences.create({
         data: {
-          user_id: req.user!,
-          genre_id: genreId,
+          genre: {
+            connect: {
+              id: genre_id,
+              name: genre.name,
+            },
+          },
+          user: {
+            connect: {
+              id: req.user,
+            },
+          },
         },
       });
     }
@@ -84,11 +95,11 @@ class UserService {
   }
   async removeFavourite(req: Request, res: Response) {
     const user = req.user;
-    const { productId } = req.body;
+    const { product_id } = req.body;
     try {
       await database.favourites.deleteMany({
         where: {
-          product_id: productId,
+          product_id: product_id,
           user_id: user,
         },
       });

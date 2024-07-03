@@ -53,8 +53,8 @@ class ProductService {
             contains: q ? `${q}` : undefined,
           },
           price: {
-            gte: priceLb ? +priceLb : undefined,
-            lte: priceUb ? +priceUb : undefined,
+            gte: priceLb ? priceLb : undefined,
+            lte: priceUb ? priceUb : undefined,
           },
           publishing_date: {
             gte: publishedDateLb ? new Date(publishedDateLb) : undefined,
@@ -72,8 +72,11 @@ class ProductService {
           [`${orderBy}`]: sort,
         },
       };
+
       const products = await database.product.findMany(filter);
-      const totalPages = (await database.product.count()) / itemLimit;
+      const totalPages =
+        (await database.product.count({ where: { ...filter.where } })) /
+        itemLimit;
 
       res
         .json({
@@ -145,19 +148,14 @@ class ProductService {
         is_selling: true,
         quantity: { gt: 0 },
       },
-      select: {
-        id: true,
-        reviews: {
-          select: {
-            rating: true,
-          },
-        },
+      include: {
+        productImages: true,
+        sale: true,
       },
-      orderBy: {
-        reviews: {},
-      },
+
       take: 10,
     });
+    return bestRatedProducts;
   }
   private async getNewestProducts() {
     const newestProducts = await database.product.findMany({
@@ -289,22 +287,25 @@ class ProductService {
         title,
         page_number,
         author: {
-          connect: author,
+          connect: {
+            id: author,
+          },
         },
         publisher: {
-          connect: publisher,
+          connect: {
+            id: publisher,
+          },
         },
         productType: {
-          connect: productType,
+          connect: {
+            id: productType,
+          },
         },
 
         description,
         price,
         quantity,
-        publishing_date,
-        genre: {
-          connect: genre,
-        },
+        publishing_date: new Date(publishing_date),
       },
     });
   }

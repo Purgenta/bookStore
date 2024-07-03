@@ -18,7 +18,7 @@ model User {
   role         Role            @default(USER)
   refreshToken RefreshToken[]
   orderReviews OrderReview[]
-  cart         Cart[]
+  cart         Cart[] 
   favourites   Favourites[]
   reviews      Review[]
   address      String?
